@@ -1,10 +1,9 @@
 # node-red-contrib-alfasinapsi
 
-
 <br/>
 
 <p>
-<b>Version 0.1.0</b> - February 2026<br/>
+<b>Version 0.1.1</b> - February 2026<br/>
 - NEW: `alfasinapsi-telemetry` output compatibility selector: Telemetria / KNX Load Control PIN.<br/>
 - NEW: KNX Load Control PIN mode emits `msg.payload` + `msg.shedding` = `shed`/`unshed` every 10 seconds, based on cutoff warning telemetry.<br/>
 - CHANGE: `alfasinapsi-telemetry` now has a single output pin; the message format depends on the selected compatibility.<br/>
