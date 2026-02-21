@@ -4,16 +4,16 @@
   <img src="assets/alfasinapsi-logo.svg" width="520" alt="node-red-contrib-alfasinapsi logo" />
 </p>
 
-Node-RED nodes to connect to **Sinapsi Alfa** via **Modbus/TCP** (WiFi) and build a **load controller**.
+Node-RED nodes to connect to **Sinapsi Alfa** over WiFi and build a **load controller**.
 
-This implementation uses the registers shown in the Home Assistant reference files under `documents/`.
+This implementation is based on the Home Assistant reference files under `documents/`.
 
 ## What you get
 
 This package adds 3 nodes:
 
-- **Sinapsi Alfa device** (`alfasinapsi-device`) – connection settings (Modbus/TCP)
-- **Sinapsi Alfa telemetry** (`alfasinapsi-telemetry`) – reads registers and outputs measurements
+- **Sinapsi Alfa device** (`alfasinapsi-device`) – connection settings
+- **Sinapsi Alfa telemetry** (`alfasinapsi-telemetry`) – reads measurements and outputs telemetry
 - **Sinapsi Alfa load controller** (`alfasinapsi-load-controller`) – decides which loads to turn ON/OFF
 
 You can use only the telemetry node (to monitor power/energy), or combine it with the load controller node.
@@ -21,7 +21,7 @@ You can use only the telemetry node (to monitor power/energy), or combine it wit
 ## Requirements
 
 - Node.js >= 18
-- A reachable Sinapsi Alfa on your WiFi network with Modbus/TCP enabled (port usually `502`)
+- A reachable Sinapsi Alfa on your WiFi network
 - Node-RED running on the same network
 
 
@@ -55,7 +55,7 @@ Output:
 - `msg.payload = { ...metrics }`
 
 Configuration:
-- `Device`: your Sinapsi IP address (connection settings are fixed to match a stable Modbus client profile)
+- `Device`: your Sinapsi IP address (connection settings are fixed for stability)
 
 ### `alfasinapsi-load-controller`
 
@@ -85,16 +85,11 @@ Main field:
 
 Fixed settings (not configurable):
 
-- TCP port: `502`
-- Function code: `3` (Read Holding Registers)
-- Unit ID: `1`
-- Timeout: `1000 ms`
-- Reconnect timeout: `2000 ms`
-- Queue delay: `1 ms`
+- Connection profile is fixed for stability (you only need the IP address).
 
 ### 2) `alfasinapsi-telemetry` (read-only measurements)
 
-This node reads registers every *Poll (ms)* and outputs a single message.
+This node reads measurements every *Poll (ms)* and outputs a single message.
 
 Typical use:
 
@@ -110,7 +105,7 @@ Message structure (high level):
   - `payload.cutoff.hasWarning` / `payload.cutoff.atIso`
 - `msg.insight` – technical details:
   - `insight.telemetry`: full decoded telemetry (includes additional fields like yesterday bands, quarter averages, etc.)
-  - `insight.meta`: timestamp, function code, read mode
+  - `insight.meta`: timestamp, read mode
   - `insight.device`: connection profile details
 
 ## Terminology (import/export/surplus)
@@ -147,9 +142,9 @@ Send a message into the node input:
 
 ## Troubleshooting
 
-- **All values are 0 or missing**: check Modbus connectivity and that port `502` is reachable from Node-RED.
-- **Timeout errors**: if port 502 is reachable but reads time out, ensure nothing else is connected to the device at the same time (some devices allow only one Modbus/TCP client). The nodes will automatically fall back to smaller reads when possible.
-- **Load controller stuck in timeout after deploy**: update to the latest version of this package. Older versions could get stuck after the first failed Modbus request due to a queue issue.
+- **All values are 0 or missing**: check connectivity and that the IP address is reachable from Node-RED.
+- **Timeout errors**: ensure nothing else is connected to the device at the same time (some devices allow only one client). The nodes will automatically fall back to smaller reads when possible.
+- **Load controller stuck in timeout after deploy**: update to the latest version of this package. Older versions could get stuck after the first failed request due to a queue issue.
 - **No nodes appear in the palette after install**: restart Node-RED and check the Node-RED logs for install errors.
 - **Cutoff notice behavior**: when `payload.cutoff.hasWarning` is `true` and *Turn everything off on cutoff notice* is enabled, the load controller will command all loads OFF.
 
