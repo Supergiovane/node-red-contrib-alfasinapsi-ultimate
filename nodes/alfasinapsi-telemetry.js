@@ -3,6 +3,10 @@
 const { readTelemetry } = require("./lib/alfasinapsi-telemetry");
 
 module.exports = function (RED) {
+  const COMPATIBILITY_TELEMETRY = "telemetry";
+  const COMPATIBILITY_KNX_LOAD_CONTROL_PIN = "knxLoadControlPin";
+  const KNX_LOAD_CONTROL_PIN_INTERVAL_MS = 10_000;
+
   function wToKw(valueW) {
     return Number(valueW ?? 0) / 1000;
   }
@@ -36,8 +40,17 @@ module.exports = function (RED) {
 
     const node = this;
     node.device = RED.nodes.getNode(config.device);
-    node.pollInterval = Math.max(500, Number(config.pollInterval || 2000));
     node.sendOnChange = !!config.sendOnChange;
+    node.compatibility = config.compatibility || COMPATIBILITY_TELEMETRY;
+
+    const knxLoadControlPinEnabled = node.compatibility === COMPATIBILITY_KNX_LOAD_CONTROL_PIN;
+    const telemetryEnabled = node.compatibility === COMPATIBILITY_TELEMETRY;
+
+    node.pollInterval = Math.max(500, Number(config.pollInterval || 2000));
+    if (knxLoadControlPinEnabled) {
+      // Keep telemetry fresh enough for the 10s PIN output cadence.
+      node.pollInterval = Math.min(node.pollInterval, KNX_LOAD_CONTROL_PIN_INTERVAL_MS);
+    }
 
     if (!node.device) {
       node.status({ fill: "red", shape: "ring", text: "dispositivo non configurato" });
@@ -46,7 +59,9 @@ module.exports = function (RED) {
 
     let lastPayload = null;
     let timer = null;
+    let knxLoadControlPinTimer = null;
     let inFlight = false;
+    let lastHasCutoffWarning = null;
 
     const onStatus = (s) => {
       if (s.connecting) node.status({ fill: "yellow", shape: "ring", text: "in connessione" });
@@ -60,6 +75,10 @@ module.exports = function (RED) {
       inFlight = true;
       try {
         const telemetry = await readTelemetry(node.device, { wordOrder: node.device.wordOrder });
+        lastHasCutoffWarning = !!telemetry?.cutoff?.hasWarning;
+
+        if (!telemetryEnabled) return;
+
         const payload = simplifyTelemetry(telemetry);
         const insight = {
           telemetry,
@@ -98,12 +117,26 @@ module.exports = function (RED) {
       }
     }
 
+    if (knxLoadControlPinEnabled) {
+      knxLoadControlPinTimer = setInterval(() => {
+        if (lastHasCutoffWarning == null) return;
+        const shedding = lastHasCutoffWarning ? "shed" : "unshed";
+        node.send({
+          topic: "alfasinapsi/telemetry/knx-load-control-pin",
+          payload: shedding,
+          shedding
+        });
+      }, KNX_LOAD_CONTROL_PIN_INTERVAL_MS);
+    }
+
     timer = setInterval(tick, node.pollInterval);
     tick().catch(() => undefined);
 
     node.on("close", (removed, done) => {
       if (timer) clearInterval(timer);
       timer = null;
+      if (knxLoadControlPinTimer) clearInterval(knxLoadControlPinTimer);
+      knxLoadControlPinTimer = null;
       node.device?.off?.("alfasinapsi:status", onStatus);
       done();
     });

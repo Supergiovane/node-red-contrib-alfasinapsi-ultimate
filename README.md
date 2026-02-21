@@ -1,7 +1,7 @@
 # node-red-contrib-alfasinapsi
 
 <p align="center">
-  <img src="assets/alfasinapsi-logo.svg" width="520" alt="node-red-contrib-alfasinapsi logo" />
+  <img src="https://raw.githubusercontent.com/Supergiovane/node-red-contrib-alfasinapsi/main/assets/alfasinapsi-logo.svg" width="520" alt="node-red-contrib-alfasinapsi logo" />
 </p>
 
 Nodi Node-RED per collegare **Sinapsi Alfa** via WiFi e creare un **controller carichi**.
@@ -24,7 +24,7 @@ Nodi Node-RED per collegare **Sinapsi Alfa** via WiFi e creare un **controller c
 Dovresti vedere i messaggi nella sidebar di debug con valori di potenza ed energia.
 
 <p align="center">
-  <img src="assets/picture.jpg" width="520" alt="jp" />
+  <img src="https://raw.githubusercontent.com/Supergiovane/node-red-contrib-alfasinapsi/main/assets/picture.jpg" width="520" alt="Esempio flow" />
 </p>
 
 Esempio `examples/alfasinapsi-load-controller.json`.
@@ -33,22 +33,26 @@ Esempio `examples/alfasinapsi-load-controller.json`.
 
 ### `alfasinapsi-telemetry`
 
-Interroga Sinapsi Alfa e invia un oggetto con:
+Interroga Sinapsi Alfa e, in base alla configurazione <i>Compatibilita</i>, invia:
 
-- potenza istantanea (import, export, production)
-- energia totale (import, export, production)
-- energia di ieri per fasce tariffarie F1..F6 (import ed export)
-- fascia tariffaria attuale
-- dati di avviso distacco (data evento + secondi rimanenti)
+- **Telemetria** (default): un messaggio con misure semplificate + dettagli tecnici.
+- **KNX Load Control PIN**: un messaggio compatibile con l'ingresso del nodo KNX Load Control (es. `knxUltimateLoadControl`) per forzare shed/unshed.
 
 Output:
 
-- `msg.topic = "alfasinapsi/telemetry"`
-- `msg.payload = { ...metrics }`
+- Modalita <b>Telemetria</b>:
+  - `msg.topic = "alfasinapsi/telemetry"`
+  - `msg.payload` (semplificato): potenza (kW), energia totale (kWh), fascia tariffaria, avviso distacco
+  - `msg.insight` (tecnico): telemetria completa decodificata (include campi extra come fasce di ieri, medie di quarto d'ora, ecc.)
+- Modalita <b>KNX Load Control PIN</b> (ogni 10s):
+  - `msg.topic = "alfasinapsi/telemetry/knx-load-control-pin"`
+  - `msg.payload = "shed" | "unshed"`
+  - `msg.shedding = "shed" | "unshed"`
 
 Configurazione:
 
 - `Dispositivo`: IP del tuo Sinapsi (parametri di connessione fissi per stabilita)
+- `Compatibilita`: seleziona <i>Telemetria</i> oppure <i>KNX Load Control PIN</i>
 
 ### `alfasinapsi-load-controller`
 
@@ -86,12 +90,17 @@ Impostazioni fisse (non modificabili):
 
 Questo nodo legge le misure ogni _Poll (ms)_ e invia un singolo messaggio.
 
+Puoi scegliere cosa emettere dall'output con <i>Compatibilita</i>:
+
+- <b>Telemetria</b>: messaggio con misure + dettagli tecnici.
+- <b>KNX Load Control PIN</b>: messaggio `shed/unshed` ogni 10 secondi (compatibile con il nodo KNX Load Control).
+
 Uso tipico:
 
 - Collegalo a un nodo **Debug** per vedere i valori.
 - Collegalo a una **Dashboard** (o alla tua logica) per visualizzare o usare potenza/energia.
 
-Struttura del messaggio (alto livello):
+Struttura del messaggio (modalita <b>Telemetria</b>):
 
 - `msg.payload` - campi semplificati per l'uso quotidiano:
   - `payload.power.importkW` / `exportkW` / `productionkW`
@@ -102,6 +111,11 @@ Struttura del messaggio (alto livello):
   - `insight.telemetry`: telemetria completa decodificata (include campi extra come fasce di ieri, medie di quarto d'ora, ecc.)
   - `insight.meta`: timestamp, modalita di lettura
   - `insight.device`: dettagli del profilo di connessione
+
+Struttura del messaggio (modalita <b>KNX Load Control PIN</b>):
+
+- `msg.payload = "shed"` se e' presente un avviso distacco imminente, altrimenti `msg.payload = "unshed"` (ogni 10s)
+- `msg.shedding` con lo stesso valore (per compatibilita con KNX Load Control)
 
 ## Terminologia (import/export/surplus)
 
