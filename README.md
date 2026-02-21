@@ -1,5 +1,3 @@
-# node-red-contrib-alfasinapsi
-
 <p align="center">
   <img src="https://raw.githubusercontent.com/Supergiovane/node-red-contrib-alfasinapsi/main/assets/alfasinapsi-logo.svg" width="520" alt="node-red-contrib-alfasinapsi logo" />
 </p>

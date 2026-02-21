@@ -1,6 +1,11 @@
 "use strict";
 
-const { readTelemetry } = require("./lib/alfasinapsi-telemetry");
+let readTelemetry;
+try {
+  ({ readTelemetry } = require("./lib/alfasinapsi-telemetry"));
+} catch (_) {
+  readTelemetry = null;
+}
 
 function safeJsonParse(value, fallback) {
   try {
@@ -16,26 +21,73 @@ function nowMs() {
 
 module.exports = function (RED) {
   function AlfaSinapsiLoadControllerNode(config) {
-    RED.nodes.createNode(this, config);
-
-    const node = this;
-    node.device = RED.nodes.getNode(config.device);
-
-    node.pollInterval = Math.max(500, Number(config.pollInterval || 2000));
-    node.mode = config.mode || "both"; // surplus | limit | both
-    node.surplusReserveW = Math.max(0, Number(config.surplusReserveW || 200));
-    node.surplusHysteresisW = Math.max(0, Number(config.surplusHysteresisW || 100));
-    node.maxImportW = Math.max(0, Number(config.maxImportW || 3000));
-    node.importHysteresisW = Math.max(0, Number(config.importHysteresisW || 150));
-    node.forceOffOnCutoff = (config.forceOffOnCutoff ?? config.forceOffOnDistacco) !== false;
-
-    const loads = safeJsonParse(config.loads, []);
-    node._loads = Array.isArray(loads) ? loads : [];
-
-    if (!node.device) {
-      node.status({ fill: "red", shape: "ring", text: "dispositivo non configurato" });
+    try {
+      RED.nodes.createNode(this, config);
+    } catch (err) {
+      try {
+        RED.log?.error?.(err?.stack || err?.message || String(err));
+      } catch (_) {
+        // ignore
+      }
       return;
     }
+
+    const node = this;
+
+    const reportError = (err, context) => {
+      const text = err?.stack || err?.message || String(err);
+      const msg = context ? `${context}: ${text}` : text;
+      try {
+        node.error(msg);
+      } catch (_) {
+        try {
+          RED.log?.error?.(msg);
+        } catch (_) {
+          // ignore
+        }
+      }
+    };
+
+    const safeStatus = (status) => {
+      try {
+        node.status(status);
+      } catch (_) {
+        // ignore
+      }
+    };
+
+    const safeSend = (msg) => {
+      try {
+        node.send(msg);
+      } catch (err) {
+        reportError(err, "send");
+      }
+    };
+
+    try {
+      if (typeof readTelemetry !== "function") {
+        safeStatus({ fill: "red", shape: "ring", text: "errore inizializzazione" });
+        reportError(new Error("readTelemetry non disponibile"), "init");
+        return;
+      }
+
+      node.device = RED.nodes.getNode(config.device);
+
+      node.pollInterval = Math.max(500, Number(config.pollInterval || 2000));
+      node.mode = config.mode || "both"; // surplus | limit | both
+      node.surplusReserveW = Math.max(0, Number(config.surplusReserveW || 200));
+      node.surplusHysteresisW = Math.max(0, Number(config.surplusHysteresisW || 100));
+      node.maxImportW = Math.max(0, Number(config.maxImportW || 3000));
+      node.importHysteresisW = Math.max(0, Number(config.importHysteresisW || 150));
+      node.forceOffOnCutoff = (config.forceOffOnCutoff ?? config.forceOffOnDistacco) !== false;
+
+      const loads = safeJsonParse(config.loads, []);
+      node._loads = Array.isArray(loads) ? loads : [];
+
+      if (!node.device) {
+        safeStatus({ fill: "red", shape: "ring", text: "dispositivo non configurato" });
+        return;
+      }
 
     const stateByName = new Map();
     for (const load of node._loads) {
@@ -45,12 +97,20 @@ module.exports = function (RED) {
       });
     }
 
-    const onStatus = (s) => {
-      if (s.connecting) node.status({ fill: "yellow", shape: "ring", text: "in connessione" });
-      else if (s.connected) node.status({ fill: "green", shape: "dot", text: "connesso" });
-      else node.status({ fill: "red", shape: "ring", text: s.error ? `errore: ${s.error}` : "disconnesso" });
-    };
-    node.device.on("alfasinapsi:status", onStatus);
+      const onStatus = (s) => {
+        try {
+          if (s.connecting) safeStatus({ fill: "yellow", shape: "ring", text: "in connessione" });
+          else if (s.connected) safeStatus({ fill: "green", shape: "dot", text: "connesso" });
+          else safeStatus({ fill: "red", shape: "ring", text: s.error ? `errore: ${s.error}` : "disconnesso" });
+        } catch (err) {
+          reportError(err, "onStatus");
+        }
+      };
+      try {
+        node.device.on("alfasinapsi:status", onStatus);
+      } catch (err) {
+        reportError(err, "device.on");
+      }
 
     function canToggle(load, st, desired) {
       const minOnMs = Math.max(0, Number(load.minOnSec || 0)) * 1000;
@@ -185,78 +245,113 @@ module.exports = function (RED) {
 
     let timer = null;
     let inFlight = false;
-    async function tick() {
-      if (inFlight) return;
-      inFlight = true;
-      try {
-        const telemetry = await readTelemetry(node.device, { wordOrder: node.device.wordOrder });
+      async function tick() {
+        if (inFlight) return;
+        inFlight = true;
+        try {
+          const telemetry = await readTelemetry(node.device, { wordOrder: node.device.wordOrder });
 
-        const summary = {
-          ts: telemetry.ts,
-          power: telemetry.power,
-          cutoff: telemetry.cutoff,
-          mode: node.mode,
-          loads: node._loads.map((l) => ({
-            name: l.name,
-            desired: !!stateByName.get(l.name)?.desired,
-            powerW: Number(l.powerW || 0),
-            priority: Number(l.priority ?? 100)
-          }))
-        };
+          const summary = {
+            ts: telemetry.ts,
+            power: telemetry.power,
+            cutoff: telemetry.cutoff,
+            mode: node.mode,
+            loads: node._loads.map((l) => ({
+              name: l.name,
+              desired: !!stateByName.get(l.name)?.desired,
+              powerW: Number(l.powerW || 0),
+              priority: Number(l.priority ?? 100)
+            }))
+          };
 
-        const out = new Array(1 + node._loads.length).fill(null);
-        out[0] = { topic: "alfasinapsi/controller", payload: summary };
+          const out = new Array(1 + node._loads.length).fill(null);
+          out[0] = { topic: "alfasinapsi/controller", payload: summary };
 
-        const actions = computeActions(telemetry);
-        for (const action of actions) {
-          out[action.output] = action.msg;
+          const actions = computeActions(telemetry);
+          for (const action of actions) {
+            out[action.output] = action.msg;
+          }
+
+          safeSend(out);
+        } catch (err) {
+          const message = err?.message || String(err);
+          const text = /timed out/i.test(message) ? "timeout" : `errore: ${message}`;
+          safeStatus({ fill: "red", shape: "ring", text: String(text).slice(0, 32) });
+          try {
+            node.error(message, {
+              topic: "alfasinapsi/controller/error",
+              payload: { message }
+            });
+          } catch (err2) {
+            reportError(err2, "node.error");
+          }
+        } finally {
+          inFlight = false;
         }
-
-        node.send(out);
-      } catch (err) {
-        const message = err?.message || String(err);
-        const text = /timed out/i.test(message) ? "timeout" : `errore: ${message}`;
-        node.status({ fill: "red", shape: "ring", text: String(text).slice(0, 32) });
-        node.error(message, {
-          topic: "alfasinapsi/controller/error",
-          payload: { message }
-        });
-      } finally {
-        inFlight = false;
       }
-    }
 
-    node.on("input", (msg, send, done) => {
-      // Override rapido: msg.topic = "load/<name>" e payload booleano => imposta desired
-      try {
-        if (typeof msg?.topic === "string" && msg.topic.startsWith("load/")) {
-          const name = msg.topic.slice("load/".length);
-          const st = stateByName.get(name);
-          const load = node._loads.find((l) => l.name === name);
-          if (st && load && typeof msg.payload === "boolean") {
-            if (canToggle(load, st, msg.payload)) {
-              st.desired = msg.payload;
-              st.lastChangeMs = nowMs();
+      node.on("input", (msg, send, done) => {
+        // Override rapido: msg.topic = "load/<name>" e payload booleano => imposta desired
+        try {
+          if (typeof msg?.topic === "string" && msg.topic.startsWith("load/")) {
+            const name = msg.topic.slice("load/".length);
+            const st = stateByName.get(name);
+            const load = node._loads.find((l) => l.name === name);
+            if (st && load && typeof msg.payload === "boolean") {
+              if (canToggle(load, st, msg.payload)) {
+                st.desired = msg.payload;
+                st.lastChangeMs = nowMs();
+              }
             }
           }
+        } catch (err) {
+          reportError(err, "input");
+        } finally {
+          try {
+            done();
+          } catch (_) {
+            // ignore
+          }
         }
-      } catch (_) {
-        // ignore
-      } finally {
-        done();
-      }
-    });
+      });
 
-    timer = setInterval(tick, node.pollInterval);
-    tick().catch(() => undefined);
+      timer = setInterval(() => {
+        tick().catch((err) => reportError(err, "tick(unhandled)"));
+      }, node.pollInterval);
+      tick().catch((err) => reportError(err, "tick(first)"));
 
-    node.on("close", (removed, done) => {
-      if (timer) clearInterval(timer);
-      timer = null;
-      node.device?.off?.("alfasinapsi:status", onStatus);
-      done();
-    });
+      node.on("close", (removed, done) => {
+        try {
+          if (timer) clearInterval(timer);
+          timer = null;
+          try {
+            node.device?.off?.("alfasinapsi:status", onStatus);
+          } catch (err) {
+            reportError(err, "device.off");
+          }
+        } catch (err) {
+          reportError(err, "close");
+        } finally {
+          try {
+            done();
+          } catch (_) {
+            // ignore
+          }
+        }
+      });
+    } catch (err) {
+      safeStatus({ fill: "red", shape: "ring", text: "errore" });
+      reportError(err, "constructor");
+    }
   }
 
-  RED.nodes.registerType("alfasinapsi-load-controller", AlfaSinapsiLoadControllerNode);
+  try {
+    RED.nodes.registerType("alfasinapsi-load-controller", AlfaSinapsiLoadControllerNode);
+  } catch (err) {
+    try {
+      RED.log?.error?.(err?.stack || err?.message || String(err));
+    } catch (_) {
+      // ignore
+    }
+  }
 };

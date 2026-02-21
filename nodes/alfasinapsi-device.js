@@ -1,12 +1,53 @@
 "use strict";
 
-const ModbusRTU = require("modbus-serial");
+let ModbusRTU;
+try {
+  ModbusRTU = require("modbus-serial");
+} catch (_) {
+  ModbusRTU = null;
+}
 
 module.exports = function (RED) {
   function AlfaSinapsiDeviceNode(config) {
-    RED.nodes.createNode(this, config);
+    try {
+      RED.nodes.createNode(this, config);
+    } catch (err) {
+      try {
+        RED.log?.error?.(err?.stack || err?.message || String(err));
+      } catch (_) {
+        // ignore
+      }
+      return;
+    }
 
     const node = this;
+
+    const reportError = (err, context) => {
+      const text = err?.stack || err?.message || String(err);
+      const msg = context ? `${context}: ${text}` : text;
+      try {
+        node.error(msg);
+      } catch (_) {
+        try {
+          RED.log?.error?.(msg);
+        } catch (_) {
+          // ignore
+        }
+      }
+    };
+
+    const safeEmit = (event, payload) => {
+      try {
+        node.emit(event, payload);
+      } catch (err) {
+        reportError(err, `emit ${event}`);
+      }
+    };
+
+    if (!ModbusRTU) {
+      reportError(new Error("Dipendenza mancante: modbus-serial"), "init");
+      return;
+    }
 
     // Impostazioni fisse (per stabilita)
     node.host = config.host;
@@ -20,7 +61,12 @@ module.exports = function (RED) {
     node.baseAddress = "0"; // 0-based
     node.wordOrder = "hiLo";
 
-    node._client = new ModbusRTU();
+    try {
+      node._client = new ModbusRTU();
+    } catch (err) {
+      reportError(err, "init client");
+      return;
+    }
     node._connected = false;
     node._connecting = false;
     node._connectPromise = null;
@@ -54,7 +100,12 @@ module.exports = function (RED) {
     async function resetClient() {
       const old = node._client;
       await destroyClient(old);
-      node._client = new ModbusRTU();
+      try {
+        node._client = new ModbusRTU();
+      } catch (err) {
+        node._client = null;
+        throw err;
+      }
     }
 
     async function connectOnce() {
@@ -63,7 +114,7 @@ module.exports = function (RED) {
       if (node._connectPromise) return node._connectPromise;
 
       node._connecting = true;
-      node.emit("alfasinapsi:status", { connecting: true, connected: false });
+      safeEmit("alfasinapsi:status", { connecting: true, connected: false });
 
       node._connectPromise = (async () => {
         try {
@@ -81,15 +132,19 @@ module.exports = function (RED) {
           ]);
           node._client.setID(node.unitId);
           node._connected = true;
-          node.emit("alfasinapsi:status", { connected: true });
+          safeEmit("alfasinapsi:status", { connected: true });
         } catch (err) {
           node._connected = false;
-          node.emit("alfasinapsi:status", { connected: false, error: err?.message || String(err) });
+          safeEmit("alfasinapsi:status", { connected: false, error: err?.message || String(err) });
 
           if (!node._closing && node._reconnectTimer == null) {
             node._reconnectTimer = setTimeout(() => {
-              node._reconnectTimer = null;
-              connectOnce().catch(() => undefined);
+              try {
+                node._reconnectTimer = null;
+                connectOnce().catch(() => undefined);
+              } catch (err) {
+                reportError(err, "reconnect timer");
+              }
             }, node.reconnectInterval);
           }
         } finally {
@@ -135,7 +190,7 @@ module.exports = function (RED) {
         } catch (err) {
           node._connected = false;
           await resetClient();
-          node.emit("alfasinapsi:status", { connected: false, error: err?.message || String(err) });
+          safeEmit("alfasinapsi:status", { connected: false, error: err?.message || String(err) });
           throw err;
         }
       });
@@ -148,7 +203,7 @@ module.exports = function (RED) {
         } catch (err) {
           node._connected = false;
           await resetClient();
-          node.emit("alfasinapsi:status", { connected: false, error: err?.message || String(err) });
+          safeEmit("alfasinapsi:status", { connected: false, error: err?.message || String(err) });
           throw err;
         }
       });
@@ -161,28 +216,44 @@ module.exports = function (RED) {
         } catch (err) {
           node._connected = false;
           await resetClient();
-          node.emit("alfasinapsi:status", { connected: false, error: err?.message || String(err) });
+          safeEmit("alfasinapsi:status", { connected: false, error: err?.message || String(err) });
           throw err;
         }
       });
 
     connectOnce().catch(() => undefined);
 
-    node.on("close", async (removed, done) => {
-      node._closing = true;
-      if (node._reconnectTimer) clearTimeout(node._reconnectTimer);
-      node._reconnectTimer = null;
-
-      try {
-        await destroyClient(node._client);
-      } catch (_) {
-        // ignore
-      } finally {
-        node._connected = false;
-        done();
-      }
+    node.on("close", (removed, done) => {
+      (async () => {
+        try {
+          node._closing = true;
+          if (node._reconnectTimer) clearTimeout(node._reconnectTimer);
+          node._reconnectTimer = null;
+          await destroyClient(node._client);
+        } catch (err) {
+          reportError(err, "close");
+        } finally {
+          node._connected = false;
+        }
+      })()
+        .catch((err) => reportError(err, "close(unhandled)"))
+        .finally(() => {
+          try {
+            done();
+          } catch (_) {
+            // ignore
+          }
+        });
     });
   }
 
-  RED.nodes.registerType("alfasinapsi-device", AlfaSinapsiDeviceNode);
+  try {
+    RED.nodes.registerType("alfasinapsi-device", AlfaSinapsiDeviceNode);
+  } catch (err) {
+    try {
+      RED.log?.error?.(err?.stack || err?.message || String(err));
+    } catch (_) {
+      // ignore
+    }
+  }
 };
