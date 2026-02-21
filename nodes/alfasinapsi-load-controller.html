@@ -1,0 +1,358 @@
+<style>
+  .alfasinapsi-loads .red-ui-editableList-container {
+    min-height: 240px;
+  }
+  .alfasinapsi-loads-title {
+    margin-top: 10px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .alfasinapsi-loads-title i {
+    margin-right: 6px;
+  }
+  .alfasinapsi-loads-container {
+    display: block;
+    width: 100%;
+  }
+  .alfasinapsi-loads-columns {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.7fr) minmax(90px, 0.8fr) minmax(90px, 0.7fr) minmax(110px, 0.9fr) minmax(110px, 0.9fr);
+    gap: 6px;
+    padding-left: 28px; /* draggable handle space */
+    padding-right: 40px; /* remove button space */
+    margin-bottom: 6px;
+    font-size: 12px;
+    opacity: 0.75;
+    box-sizing: border-box;
+  }
+  .alfasinapsi-loads-columns div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .alfasinapsi-load-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.7fr) minmax(90px, 0.8fr) minmax(90px, 0.7fr) minmax(110px, 0.9fr) minmax(110px, 0.9fr);
+    gap: 6px;
+    align-items: center;
+  }
+  .alfasinapsi-load-row input {
+    width: 100%;
+  }
+</style>
+
+<script type="text/html" data-template-name="alfasinapsi-load-controller">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="load controller">
+  </div>
+  <div class="form-row">
+    <label for="node-input-device"><i class="fa fa-plug"></i> Device</label>
+    <input type="text" id="node-input-device">
+  </div>
+  <div class="form-row">
+    <label for="node-input-pollInterval"><i class="fa fa-clock-o"></i> Poll (ms)</label>
+    <input type="number" id="node-input-pollInterval" placeholder="2000">
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-mode"><i class="fa fa-sliders"></i> Mode</label>
+    <select id="node-input-mode">
+      <option value="both">Surplus + import limit</option>
+      <option value="surplus">Surplus only (uses export)</option>
+      <option value="limit">Import limit only (uses import)</option>
+    </select>
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-maxImportW"><i class="fa fa-tachometer"></i> Max import (W)</label>
+    <input type="number" id="node-input-maxImportW" placeholder="3000">
+  </div>
+  <div class="form-row">
+    <label for="node-input-importHysteresisW"><i class="fa fa-arrows-h"></i> Import hysteresis (W)</label>
+    <input type="number" id="node-input-importHysteresisW" placeholder="150">
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-surplusReserveW"><i class="fa fa-shield"></i> Surplus reserve (W)</label>
+    <input type="number" id="node-input-surplusReserveW" placeholder="200">
+  </div>
+  <div class="form-row">
+    <label for="node-input-surplusHysteresisW"><i class="fa fa-arrows-h"></i> Surplus hysteresis (W)</label>
+    <input type="number" id="node-input-surplusHysteresisW" placeholder="100">
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-forceOffOnCutoff"><i class="fa fa-exclamation-triangle"></i> Cutoff</label>
+    <input type="checkbox" id="node-input-forceOffOnCutoff" style="width:auto;">
+    <span style="margin-left:6px;">Turn everything off on cutoff notice</span>
+  </div>
+
+  <div class="form-row alfasinapsi-loads-title">
+    <span><i class="fa fa-list"></i> Loads</span>
+  </div>
+  <div class="form-row alfasinapsi-loads">
+    <input type="hidden" id="node-input-loads">
+    <div class="alfasinapsi-loads-container">
+      <div class="alfasinapsi-loads-columns">
+        <div>Name</div>
+        <div>W</div>
+        <div>Priority</div>
+        <div>Min ON (s)</div>
+        <div>Min OFF (s)</div>
+      </div>
+      <ol id="node-input-loads-list"></ol>
+    </div>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="alfasinapsi-load-controller">
+  <p>
+    <b>Sinapsi Alfa load controller</b> reads power telemetry and decides which loads should be ON/OFF.
+    It outputs the decisions as boolean messages.
+  </p>
+
+  <h3>Important</h3>
+  <p>
+    This node <b>does not switch relays</b> by itself.
+    Connect each load output to something that can actually turn devices on/off (MQTT, Shelly, Home Assistant calls, etc.).
+  </p>
+
+  <h3>Inputs</h3>
+  <p>This node has 1 input.</p>
+  <dl class="message-properties">
+    <dt>Manual override (optional)</dt>
+    <dd>
+      Send <code>msg.topic = "load/&lt;name&gt;"</code> and <code>msg.payload = true/false</code> to force the desired state
+      of a load. The new desired state will be applied on the next polling cycle.
+    </dd>
+  </dl>
+
+  <h3>Outputs</h3>
+  <p>
+    Output count is <code>1 + number of loads</code>.
+  </p>
+  <ul>
+    <li><b>Output 1</b> (<code>alfasinapsi/controller</code>): controller summary (power + current desired states)</li>
+    <li><b>Output 2..N+1</b>: one output per configured load (boolean command)</li>
+  </ul>
+  <p>
+    Note: per-load outputs emit a message only when the node changes the desired state (and when Min ON/OFF timers allow it).
+    Otherwise that output will not emit anything for that cycle.
+  </p>
+
+  <h3>Output 1 message</h3>
+  <dl class="message-properties">
+    <dt>msg.topic <span class="property-type">string</span></dt>
+    <dd><code>alfasinapsi/controller</code></dd>
+
+    <dt>msg.payload <span class="property-type">object</span></dt>
+    <dd>
+      Summary object with:
+      <ul>
+        <li><code>payload.power.importW</code>, <code>payload.power.exportW</code>, <code>payload.power.productionW</code> (Watts)</li>
+        <li><code>payload.cutoff.hasWarning</code></li>
+        <li><code>payload.mode</code></li>
+        <li><code>payload.loads[]</code> (name, desired, powerW, priority)</li>
+      </ul>
+    </dd>
+  </dl>
+
+  <h3>Per-load command message</h3>
+  <dl class="message-properties">
+    <dt>msg.topic <span class="property-type">string</span></dt>
+    <dd><code>load/&lt;name&gt;</code></dd>
+
+    <dt>msg.payload <span class="property-type">boolean</span></dt>
+    <dd><code>true</code> to turn ON, <code>false</code> to turn OFF.</dd>
+
+    <dt>msg.load <span class="property-type">string</span></dt>
+    <dd>Load name (same as in <code>load/&lt;name&gt;</code>).</dd>
+
+    <dt>msg.reason <span class="property-type">string</span></dt>
+    <dd>
+      Why the node decided to switch:
+      <code>surplus</code>, <code>surplus_drop</code>, <code>import_limit</code>, <code>cutoff_notice</code>.
+    </dd>
+
+    <dt>msg.telemetry <span class="property-type">object</span></dt>
+    <dd>Full telemetry snapshot used for the decision (technical details).</dd>
+  </dl>
+
+  <h3>Configuration</h3>
+  <dl class="message-properties">
+    <dt>Device <span class="property-type">alfasinapsi-device</span></dt>
+    <dd>Sinapsi IP address (Modbus/TCP settings are fixed by the device config node).</dd>
+
+    <dt>Poll (ms) <span class="property-type">number</span></dt>
+    <dd>How often the controller reads telemetry and evaluates loads.</dd>
+
+    <dt>Mode <span class="property-type">both | surplus | limit</span></dt>
+    <dd>
+      <ul>
+        <li><code>surplus</code>: uses exported power to enable/disable loads</li>
+        <li><code>limit</code>: sheds loads when imported power is above the limit</li>
+        <li><code>both</code>: applies <code>limit</code> first, then <code>surplus</code></li>
+      </ul>
+    </dd>
+
+    <dt>Max import (W) <span class="property-type">number</span></dt>
+    <dd>Imported power limit used by <code>limit</code> mode.</dd>
+
+    <dt>Import hysteresis (W) <span class="property-type">number</span></dt>
+    <dd>
+      To avoid rapid toggling, shedding targets <code>maxImportW - importHysteresisW</code>.
+    </dd>
+
+    <dt>Surplus reserve (W) <span class="property-type">number</span></dt>
+    <dd>Reserved exported power not used for loads (safety margin).</dd>
+
+    <dt>Surplus hysteresis (W) <span class="property-type">number</span></dt>
+    <dd>
+      Extra margin used when enabling loads to avoid rapid toggling when surplus is close to load power.
+    </dd>
+
+    <dt>Cutoff <span class="property-type">boolean</span></dt>
+    <dd>If enabled, a cutoff notice forces all loads OFF.</dd>
+
+    <dt>Loads <span class="property-type">list</span></dt>
+    <dd>List of loads (see below).</dd>
+  </dl>
+
+  <h3>How the controller works</h3>
+  <ul>
+    <li><b>Surplus</b>: uses exported power (<code>power.exportW</code>) to enable loads.</li>
+    <li><b>Import limit</b>: uses imported power (<code>power.importW</code>) to shed loads when above limit.</li>
+    <li><b>Cutoff</b>: if a cutoff notice is present and enabled, it forces all loads OFF.</li>
+    <li><b>Priority</b>: lower number = higher priority (enabled first, shed last).</li>
+  </ul>
+
+  <h3>Loads configuration</h3>
+  <dl class="message-properties">
+    <dt>Name <span class="property-type">string</span></dt>
+    <dd>Load identifier. Also used for output labels and manual override topic <code>load/&lt;name&gt;</code>.</dd>
+
+    <dt>W <span class="property-type">number</span></dt>
+    <dd>Estimated power consumption (Watts). Used to decide how many loads can fit in the available surplus.</dd>
+
+    <dt>Priority <span class="property-type">number</span></dt>
+    <dd>Lower number = higher priority (kept ON longer).</dd>
+
+    <dt>Min ON (s) / Min OFF (s) <span class="property-type">number</span></dt>
+    <dd>Anti-flapping timers to avoid switching too often.</dd>
+  </dl>
+</script>
+
+<script type="text/javascript">
+  (function () {
+    function loadDefaults() {
+      return { name: "load", powerW: 800, priority: 50, minOnSec: 0, minOffSec: 0 };
+    }
+
+    function safeParseLoads(value) {
+      if (Array.isArray(value)) return value;
+      if (typeof value !== "string") return [];
+      try {
+        const parsed = JSON.parse(value || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function normaliseLoads(list) {
+      return (list || []).filter(l => l && l.name);
+    }
+
+    RED.nodes.registerType('alfasinapsi-load-controller', {
+      category: 'energy',
+      color: '#F8E0E0',
+      defaults: {
+        name: { value: "" },
+        device: { value: "", type: "alfasinapsi-device", required: true },
+        pollInterval: { value: 2000, validate: RED.validators.number() },
+        mode: { value: "both" },
+        maxImportW: { value: 3000, validate: RED.validators.number() },
+        importHysteresisW: { value: 150, validate: RED.validators.number() },
+        surplusReserveW: { value: 200, validate: RED.validators.number() },
+        surplusHysteresisW: { value: 100, validate: RED.validators.number() },
+        forceOffOnCutoff: { value: true },
+        loads: { value: "[]" }
+      },
+      inputs: 1,
+      outputs: function () {
+        const loads = normaliseLoads(safeParseLoads(this.loads));
+        return 1 + loads.length;
+      },
+      outputLabels: function (index) {
+        if (index === 0) return "controller";
+        try {
+          const loads = normaliseLoads(safeParseLoads(this.loads));
+          const l = loads[index - 1];
+          return l ? l.name : ("load " + index);
+        } catch (e) {
+          return ("load " + index);
+        }
+      },
+      icon: "font-awesome/fa-toggle-on",
+      label: function () { return this.name || "alfasinapsi load controller"; },
+      oneditprepare: function () {
+        // Migration from older versions (previous property name)
+        if (typeof this.forceOffOnCutoff === "undefined" && typeof this.forceOffOnDistacco !== "undefined") {
+          this.forceOffOnCutoff = this.forceOffOnDistacco;
+        }
+        $("#node-input-forceOffOnCutoff").prop("checked", !!this.forceOffOnCutoff);
+
+        const list = $("#node-input-loads-list");
+        const loads = normaliseLoads(safeParseLoads(this.loads));
+
+        function writeBack() {
+          const items = [];
+          list.editableList('items').each(function (i) {
+            const row = $(this);
+            items.push({
+              name: row.find(".alf-name").val(),
+              powerW: Number(row.find(".alf-power").val()),
+              priority: Number(row.find(".alf-priority").val()),
+              minOnSec: Number(row.find(".alf-minon").val()),
+              minOffSec: Number(row.find(".alf-minoff").val())
+            });
+          });
+          $("#node-input-loads").val(JSON.stringify(normaliseLoads(items)));
+        }
+
+        list.editableList({
+          addButton: true,
+          removable: true,
+          sortable: true,
+          addItem: function (container, i, data) {
+            const d = $.extend(loadDefaults(), data);
+            const row = $('<div class="alfasinapsi-load-row"></div>').appendTo(container);
+
+            $('<input type="text" class="alf-name" placeholder="Name">').val(d.name).appendTo(row);
+            $('<input type="number" class="alf-power" placeholder="W">').val(d.powerW).appendTo(row);
+            $('<input type="number" class="alf-priority" placeholder="Priority">').val(d.priority).appendTo(row);
+            $('<input type="number" class="alf-minon" placeholder="Min ON (s)">').val(d.minOnSec).appendTo(row);
+            $('<input type="number" class="alf-minoff" placeholder="Min OFF (s)">').val(d.minOffSec).appendTo(row);
+
+            row.find("input").on("change keyup", writeBack);
+            writeBack();
+          },
+          removeItem: function () { writeBack(); },
+          sortItems: function () { writeBack(); }
+        });
+
+        loads.forEach(l => list.editableList('addItem', l));
+        writeBack();
+      },
+      oneditsave: function () {
+        try {
+          const loads = normaliseLoads(safeParseLoads($("#node-input-loads").val() || "[]"));
+          this.outputs = 1 + loads.length;
+        } catch (e) {
+          this.outputs = 1;
+        }
+      }
+    });
+  })();
+</script>

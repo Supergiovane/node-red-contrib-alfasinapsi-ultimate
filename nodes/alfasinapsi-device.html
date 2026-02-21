@@ -1,0 +1,49 @@
+<script type="text/html" data-template-name="alfasinapsi-device">
+  <div class="form-row">
+    <label for="node-config-input-host"><i class="fa fa-globe"></i> Sinapsi IP address</label>
+    <input type="text" id="node-config-input-host" placeholder="192.168.1.186">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="alfasinapsi-device">
+  <p><b>Sinapsi Alfa device</b> is a configuration node used by the other nodes in this package.</p>
+
+  <h3>What it does</h3>
+  <p>It stores the Sinapsi IP address and connects via Modbus/TCP using fixed settings.</p>
+
+  <h3>Fixed settings</h3>
+  <ul>
+    <li>TCP port: <code>502</code></li>
+    <li>Function code: <code>3</code> (Read Holding Registers)</li>
+    <li>Unit ID: <code>1</code></li>
+    <li>Timeout: <code>1000 ms</code></li>
+    <li>Reconnect timeout: <code>2000 ms</code></li>
+    <li>Queue delay: <code>1 ms</code></li>
+  </ul>
+
+  <h3>Notes</h3>
+  <ul>
+    <li>If a read request times out, the node automatically resets the TCP connection and retries on the next poll.</li>
+    <li>The internal request queue continues working even after a failed request.</li>
+  </ul>
+
+  <h3>Configuration</h3>
+  <dl class="message-properties">
+    <dt>Sinapsi IP address <span class="property-type">string</span></dt>
+    <dd>IP address or hostname of the Sinapsi Alfa device.</dd>
+  </dl>
+</script>
+
+<script type="text/javascript">
+  (function () {
+    RED.nodes.registerType('alfasinapsi-device', {
+      category: 'config',
+      defaults: {
+        host: { value: "", required: true }
+      },
+      label: function () {
+        return this.host ? ("Sinapsi " + this.host) : "Sinapsi Alfa";
+      }
+    });
+  })();
+</script>

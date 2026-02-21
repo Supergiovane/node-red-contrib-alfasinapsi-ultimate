@@ -1,0 +1,40 @@
+{
+  "name": "node-red-contrib-alfasinapsi",
+  "version": "0.1.0",
+  "description": "Node-RED nodes to integrate Sinapsi Alfa and build a load controller. Additionally, it's also possible to use the native integration with KNX-Ultimate's load controller.",
+  "keywords": [
+    "node-red",
+    "node-red-contrib",
+    "modbus",
+    "energy",
+    "sinapsi",
+    "alfa",
+    "load-control"
+  ],
+  "license": "MIT",
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "index.js",
+  "files": [
+    "nodes/**/*",
+    "locales/**/*",
+    "examples/**/*",
+    "README.md"
+  ],
+  "dependencies": {
+    "modbus-serial": "^8.0.23"
+  },
+  "node-red": {
+    "nodes": {
+      "alfasinapsi-device": "nodes/alfasinapsi-device.js",
+      "alfasinapsi-telemetry": "nodes/alfasinapsi-telemetry.js",
+      "alfasinapsi-load-controller": "nodes/alfasinapsi-load-controller.js"
+    }
+  }
+}

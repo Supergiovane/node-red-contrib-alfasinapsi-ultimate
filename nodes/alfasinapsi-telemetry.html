@@ -1,0 +1,92 @@
+<script type="text/html" data-template-name="alfasinapsi-telemetry">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="telemetry">
+  </div>
+  <div class="form-row">
+    <label for="node-input-device"><i class="fa fa-plug"></i> Device</label>
+    <input type="text" id="node-input-device">
+  </div>
+  <div class="form-row">
+    <label for="node-input-pollInterval"><i class="fa fa-clock-o"></i> Poll (ms)</label>
+    <input type="number" id="node-input-pollInterval" placeholder="2000">
+  </div>
+  <div class="form-row">
+    <label for="node-input-sendOnChange"><i class="fa fa-filter"></i> Only on change</label>
+    <input type="checkbox" id="node-input-sendOnChange" style="width:auto;">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="alfasinapsi-telemetry">
+  <p><b>Sinapsi Alfa telemetry</b> reads Modbus/TCP registers from Sinapsi Alfa and outputs measurements as a single message.</p>
+
+  <h3>Outputs</h3>
+  <p>This node has 1 output.</p>
+  <dl class="message-properties">
+    <dt>msg.topic <span class="property-type">string</span></dt>
+    <dd><code>alfasinapsi/telemetry</code></dd>
+
+    <dt>msg.payload <span class="property-type">object</span></dt>
+    <dd>Simplified values for everyday use (power/energy/tariff band/cutoff notice).</dd>
+
+    <dt>msg.insight <span class="property-type">object</span></dt>
+    <dd>Technical details (full decoded telemetry + protocol/meta information).</dd>
+  </dl>
+
+  <h3>msg.payload (simplified)</h3>
+  <ul>
+    <li><code>payload.power.importkW</code>, <code>payload.power.exportkW</code>, <code>payload.power.productionkW</code></li>
+    <li><code>payload.energy.importTotalkWh</code>, <code>payload.energy.exportTotalkWh</code>, <code>payload.energy.productionTotalkWh</code></li>
+    <li><code>payload.tariffBand</code></li>
+    <li><code>payload.cutoff.hasWarning</code>, <code>payload.cutoff.atIso</code></li>
+  </ul>
+
+  <h3>msg.insight (technical)</h3>
+  <ul>
+    <li><code>insight.telemetry</code>: full decoded telemetry (includes additional fields like yesterday bands, quarter averages, etc.)</li>
+    <li><code>insight.meta</code>: timestamp, function code, read mode</li>
+    <li><code>insight.device</code>: connection profile details</li>
+  </ul>
+
+  <h3>Configuration</h3>
+  <dl class="message-properties">
+    <dt>Device <span class="property-type">alfasinapsi-device</span></dt>
+    <dd>The shared Modbus/TCP connection settings.</dd>
+
+    <dt>Poll (ms) <span class="property-type">number</span></dt>
+    <dd>How often the node reads registers.</dd>
+
+    <dt>Only on change <span class="property-type">boolean</span></dt>
+    <dd>If enabled, messages are sent only when the payload changes.</dd>
+  </dl>
+
+  <h3>Protocol</h3>
+  <ul>
+    <li>Function code: <code>3</code> (Read Holding Registers)</li>
+  </ul>
+
+  <h3>Troubleshooting</h3>
+  <ul>
+    <li>If values stay at 0, verify the IP address and that Modbus/TCP port 502 is reachable from Node-RED.</li>
+    <li>If you see timeout errors, make sure nothing else is connected to the device at the same time (some devices allow only one Modbus/TCP client).</li>
+  </ul>
+</script>
+
+<script type="text/javascript">
+  (function () {
+    RED.nodes.registerType('alfasinapsi-telemetry', {
+      category: 'energy',
+      color: '#00BAFF',
+      defaults: {
+        name: { value: "" },
+        device: { value: "", type: "alfasinapsi-device", required: true },
+        pollInterval: { value: 2000, validate: RED.validators.number() },
+        sendOnChange: { value: false }
+      },
+      inputs: 0,
+      outputs: 1,
+      icon: "font-awesome/fa-bolt",
+      label: function () { return this.name || "alfasinapsi telemetry"; }
+    });
+  })();
+</script>

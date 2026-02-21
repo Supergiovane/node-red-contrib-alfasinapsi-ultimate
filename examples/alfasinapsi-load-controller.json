@@ -1,0 +1,87 @@
+[
+  {
+    "id": "9d9c4e4a1f2b93b1",
+    "type": "tab",
+    "label": "Sinapsi Alfa - Load Controller",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "7c7f77b9fbf995f1",
+    "type": "alfasinapsi-device",
+    "host": "192.168.1.186"
+  },
+  {
+    "id": "3b0c5c74d2e9cf61",
+    "type": "alfasinapsi-load-controller",
+    "z": "9d9c4e4a1f2b93b1",
+    "name": "Load controller",
+    "device": "7c7f77b9fbf995f1",
+    "pollInterval": "2000",
+    "mode": "both",
+    "maxImportW": "3000",
+    "importHysteresisW": "150",
+    "surplusReserveW": "200",
+    "surplusHysteresisW": "100",
+    "forceOffOnCutoff": true,
+    "loads": "[{\"name\":\"boiler\",\"powerW\":1200,\"priority\":80,\"minOnSec\":60,\"minOffSec\":60},{\"name\":\"washer\",\"powerW\":800,\"priority\":60,\"minOnSec\":30,\"minOffSec\":30}]",
+    "x": 320,
+    "y": 200,
+    "wires": [
+      [
+        "da6a7bd0f2bbf2ce"
+      ],
+      [
+        "25e8e9e02a0d0f59"
+      ],
+      [
+        "b0e4d11fbe1739c7"
+      ]
+    ]
+  },
+  {
+    "id": "da6a7bd0f2bbf2ce",
+    "type": "debug",
+    "z": "9d9c4e4a1f2b93b1",
+    "name": "summary",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 610,
+    "y": 200,
+    "wires": []
+  },
+  {
+    "id": "25e8e9e02a0d0f59",
+    "type": "debug",
+    "z": "9d9c4e4a1f2b93b1",
+    "name": "boiler cmd",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "x": 620,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "b0e4d11fbe1739c7",
+    "type": "debug",
+    "z": "9d9c4e4a1f2b93b1",
+    "name": "washer cmd",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "x": 650,
+    "y": 240,
+    "wires": []
+  }
+]
