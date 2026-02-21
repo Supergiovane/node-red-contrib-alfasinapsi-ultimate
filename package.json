@@ -1,7 +1,7 @@
 {
   "name": "node-red-contrib-alfasinapsi",
   "version": "0.1.0",
-  "description": "Node-RED nodes to integrate Sinapsi Alfa and build a load controller. Additionally, it's also possible to use the native integration with KNX-Ultimate's load controller.",
+  "description": "Nodi Node-RED per collegare Sinapsi Alfa e creare un controller carichi. In alternativa, e' possibile usare l'integrazione nativa con il load controller di KNX-Ultimate.",
   "keywords": [
     "node-red",
     "node-red-contrib",

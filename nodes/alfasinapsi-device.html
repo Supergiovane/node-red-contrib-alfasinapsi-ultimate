@@ -1,36 +1,36 @@
 <script type="text/html" data-template-name="alfasinapsi-device">
   <div class="form-row">
-    <label for="node-config-input-host"><i class="fa fa-globe"></i> Sinapsi IP address</label>
+    <label for="node-config-input-host"><i class="fa fa-globe"></i> Indirizzo IP Sinapsi</label>
     <input type="text" id="node-config-input-host" placeholder="192.168.1.186">
   </div>
 </script>
 
 <script type="text/html" data-help-name="alfasinapsi-device">
-  <p><b>Sinapsi Alfa device</b> is a configuration node used by the other nodes in this package.</p>
+  <p><b>Dispositivo Sinapsi Alfa</b> e' un nodo di configurazione usato dagli altri nodi di questo pacchetto.</p>
 
-  <h3>What it does</h3>
-  <p>It stores the Sinapsi IP address and connects via Modbus/TCP using fixed settings.</p>
+  <h3>Cosa fa</h3>
+  <p>Salva l'indirizzo IP di Sinapsi e usa impostazioni fisse di comunicazione (per stabilita).</p>
 
-  <h3>Fixed settings</h3>
+  <h3>Impostazioni fisse</h3>
   <ul>
-    <li>TCP port: <code>502</code></li>
-    <li>Function code: <code>3</code> (Read Holding Registers)</li>
+    <li>Porta TCP: <code>502</code></li>
+    <li>Codice funzione: <code>3</code> (lettura registri holding)</li>
     <li>Unit ID: <code>1</code></li>
     <li>Timeout: <code>1000 ms</code></li>
-    <li>Reconnect timeout: <code>2000 ms</code></li>
-    <li>Queue delay: <code>1 ms</code></li>
+    <li>Timeout riconnessione: <code>2000 ms</code></li>
+    <li>Ritardo coda: <code>1 ms</code></li>
   </ul>
 
-  <h3>Notes</h3>
+  <h3>Note</h3>
   <ul>
-    <li>If a read request times out, the node automatically resets the TCP connection and retries on the next poll.</li>
-    <li>The internal request queue continues working even after a failed request.</li>
+    <li>Se una lettura va in timeout, il nodo resetta automaticamente la connessione e riprova al prossimo polling.</li>
+    <li>La coda interna continua a funzionare anche dopo una richiesta fallita.</li>
   </ul>
 
-  <h3>Configuration</h3>
+  <h3>Configurazione</h3>
   <dl class="message-properties">
-    <dt>Sinapsi IP address <span class="property-type">string</span></dt>
-    <dd>IP address or hostname of the Sinapsi Alfa device.</dd>
+    <dt>Indirizzo IP Sinapsi <span class="property-type">string</span></dt>
+    <dd>Indirizzo IP o hostname del dispositivo Sinapsi Alfa.</dd>
   </dl>
 </script>
 

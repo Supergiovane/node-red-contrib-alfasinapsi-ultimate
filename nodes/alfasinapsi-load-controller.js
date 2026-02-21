@@ -33,7 +33,7 @@ module.exports = function (RED) {
     node._loads = Array.isArray(loads) ? loads : [];
 
     if (!node.device) {
-      node.status({ fill: "red", shape: "ring", text: "device not configured" });
+      node.status({ fill: "red", shape: "ring", text: "dispositivo non configurato" });
       return;
     }
 
@@ -46,9 +46,9 @@ module.exports = function (RED) {
     }
 
     const onStatus = (s) => {
-      if (s.connecting) node.status({ fill: "yellow", shape: "ring", text: "connecting" });
-      else if (s.connected) node.status({ fill: "green", shape: "dot", text: "connected" });
-      else node.status({ fill: "red", shape: "ring", text: s.error ? `error: ${s.error}` : "disconnected" });
+      if (s.connecting) node.status({ fill: "yellow", shape: "ring", text: "in connessione" });
+      else if (s.connected) node.status({ fill: "green", shape: "dot", text: "connesso" });
+      else node.status({ fill: "red", shape: "ring", text: s.error ? `errore: ${s.error}` : "disconnesso" });
     };
     node.device.on("alfasinapsi:status", onStatus);
 
@@ -215,7 +215,7 @@ module.exports = function (RED) {
         node.send(out);
       } catch (err) {
         const message = err?.message || String(err);
-        const text = /timed out/i.test(message) ? "timeout" : `error: ${message}`;
+        const text = /timed out/i.test(message) ? "timeout" : `errore: ${message}`;
         node.status({ fill: "red", shape: "ring", text: String(text).slice(0, 32) });
         node.error(message, {
           topic: "alfasinapsi/controller/error",
@@ -227,7 +227,7 @@ module.exports = function (RED) {
     }
 
     node.on("input", (msg, send, done) => {
-      // Quick override: msg.topic = "load/<name>" and boolean payload => set desired
+      // Override rapido: msg.topic = "load/<name>" e payload booleano => imposta desired
       try {
         if (typeof msg?.topic === "string" && msg.topic.startsWith("load/")) {
           const name = msg.topic.slice("load/".length);

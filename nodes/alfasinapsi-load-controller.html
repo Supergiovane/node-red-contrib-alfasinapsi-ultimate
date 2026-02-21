@@ -90,11 +90,11 @@
 
 <script type="text/html" data-template-name="alfasinapsi-load-controller">
   <div class="form-row">
-    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="load controller">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Nome</label>
+    <input type="text" id="node-input-name" placeholder="controller carichi">
   </div>
   <div class="form-row">
-    <label for="node-input-device"><i class="fa fa-plug"></i> Device</label>
+    <label for="node-input-device"><i class="fa fa-plug"></i> Dispositivo</label>
     <input type="text" id="node-input-device">
   </div>
   <div class="form-row">
@@ -103,50 +103,50 @@
   </div>
 
   <div class="form-row">
-    <label for="node-input-mode"><i class="fa fa-sliders"></i> Mode</label>
+    <label for="node-input-mode"><i class="fa fa-sliders"></i> Modalita</label>
     <select id="node-input-mode">
-      <option value="both">Surplus + import limit</option>
-      <option value="surplus">Surplus only (uses export)</option>
-      <option value="limit">Import limit only (uses import)</option>
+      <option value="both">Surplus + limite import</option>
+      <option value="surplus">Solo surplus (usa export)</option>
+      <option value="limit">Solo limite import (usa import)</option>
     </select>
   </div>
 
   <div class="form-row">
-    <label for="node-input-maxImportW"><i class="fa fa-tachometer"></i> Max import (W)</label>
+    <label for="node-input-maxImportW"><i class="fa fa-tachometer"></i> Import massimo (W)</label>
     <input type="number" id="node-input-maxImportW" placeholder="3000">
   </div>
   <div class="form-row">
-    <label for="node-input-importHysteresisW"><i class="fa fa-arrows-h"></i> Import hysteresis (W)</label>
+    <label for="node-input-importHysteresisW"><i class="fa fa-arrows-h"></i> Isteresi import (W)</label>
     <input type="number" id="node-input-importHysteresisW" placeholder="150">
   </div>
 
   <div class="form-row">
-    <label for="node-input-surplusReserveW"><i class="fa fa-shield"></i> Surplus reserve (W)</label>
+    <label for="node-input-surplusReserveW"><i class="fa fa-shield"></i> Riserva surplus (W)</label>
     <input type="number" id="node-input-surplusReserveW" placeholder="200">
   </div>
   <div class="form-row">
-    <label for="node-input-surplusHysteresisW"><i class="fa fa-arrows-h"></i> Surplus hysteresis (W)</label>
+    <label for="node-input-surplusHysteresisW"><i class="fa fa-arrows-h"></i> Isteresi surplus (W)</label>
     <input type="number" id="node-input-surplusHysteresisW" placeholder="100">
   </div>
 
   <div class="form-row">
-    <label for="node-input-forceOffOnCutoff"><i class="fa fa-exclamation-triangle"></i> Cutoff</label>
+    <label for="node-input-forceOffOnCutoff"><i class="fa fa-exclamation-triangle"></i> Distacco</label>
     <input type="checkbox" id="node-input-forceOffOnCutoff" style="width:auto;">
-    <span style="margin-left:6px;">Turn everything off on cutoff notice</span>
+    <span style="margin-left:6px;">Spegni tutto se arriva avviso distacco</span>
   </div>
 
   <div class="form-row alfasinapsi-loads-title">
-    <span><i class="fa fa-list"></i> Loads</span>
+    <span><i class="fa fa-list"></i> Carichi</span>
   </div>
   <div class="form-row alfasinapsi-loads">
     <input type="hidden" id="node-input-loads">
     <div class="alfasinapsi-loads-container">
       <div class="alfasinapsi-loads-columns">
-        <div>Name</div>
+        <div>Nome</div>
         <div>W</div>
-        <div>Priority</div>
-        <div>Min ON (s)</div>
-        <div>Min OFF (s)</div>
+        <div>Priorita</div>
+        <div>Min acceso (s)</div>
+        <div>Min spento (s)</div>
       </div>
       <ol id="node-input-loads-list"></ol>
     </div>
@@ -155,47 +155,47 @@
 
 <script type="text/html" data-help-name="alfasinapsi-load-controller">
   <p>
-    <b>Sinapsi Alfa load controller</b> reads power telemetry and decides which loads should be ON/OFF.
-    It outputs the decisions as boolean messages.
+    <b>Sinapsi Alfa controller carichi</b> legge la telemetria di potenza e decide quali carichi devono essere ON/OFF.
+    Le decisioni vengono inviate come messaggi booleani.
   </p>
 
-  <h3>Important</h3>
+  <h3>Importante</h3>
   <p>
-    This node <b>does not switch relays</b> by itself.
-    Connect each load output to something that can actually turn devices on/off (MQTT, Shelly, Home Assistant calls, etc.).
+    Questo nodo <b>non comanda i rele</b> da solo.
+    Collega ogni uscita carico a qualcosa che possa davvero accendere/spegnere dispositivi (MQTT, Shelly, chiamate Home Assistant, ecc.).
   </p>
 
-  <h3>Inputs</h3>
-  <p>This node has 1 input.</p>
+  <h3>Ingressi</h3>
+  <p>Questo nodo ha 1 ingresso.</p>
   <dl class="message-properties">
-    <dt>Manual override (optional)</dt>
+    <dt>Override manuale (opzionale)</dt>
     <dd>
-      Send <code>msg.topic = "load/&lt;name&gt;"</code> and <code>msg.payload = true/false</code> to force the desired state
-      of a load. The new desired state will be applied on the next polling cycle.
+      Invia <code>msg.topic = "load/&lt;name&gt;"</code> e <code>msg.payload = true/false</code> per forzare lo stato desiderato
+      di un carico. Il nuovo stato verra applicato al prossimo ciclo di polling.
     </dd>
   </dl>
 
-  <h3>Outputs</h3>
+  <h3>Uscite</h3>
   <p>
-    Output count is <code>1 + number of loads</code>.
+    Il numero di uscite e' <code>1 + numero di carichi</code>.
   </p>
   <ul>
-    <li><b>Output 1</b> (<code>alfasinapsi/controller</code>): controller summary (power + current desired states)</li>
-    <li><b>Output 2..N+1</b>: one output per configured load (boolean command)</li>
+    <li><b>Uscita 1</b> (<code>alfasinapsi/controller</code>): riepilogo (potenza + stati desiderati)</li>
+    <li><b>Uscite 2..N+1</b>: una uscita per ogni carico configurato (comando booleano)</li>
   </ul>
   <p>
-    Note: per-load outputs emit a message only when the node changes the desired state (and when Min ON/OFF timers allow it).
-    Otherwise that output will not emit anything for that cycle.
+    Nota: le uscite dei singoli carichi inviano un messaggio solo quando il nodo cambia lo stato desiderato (e quando i timer Min acceso/spento lo permettono).
+    Altrimenti, in quel ciclo, quella uscita non emette nulla.
   </p>
 
-  <h3>Output 1 message</h3>
+  <h3>Messaggio uscita 1</h3>
   <dl class="message-properties">
     <dt>msg.topic <span class="property-type">string</span></dt>
     <dd><code>alfasinapsi/controller</code></dd>
 
     <dt>msg.payload <span class="property-type">object</span></dt>
     <dd>
-      Summary object with:
+      Oggetto riepilogo con:
       <ul>
         <li><code>payload.power.importW</code>, <code>payload.power.exportW</code>, <code>payload.power.productionW</code> (Watts)</li>
         <li><code>payload.cutoff.hasWarning</code></li>
@@ -205,101 +205,101 @@
     </dd>
   </dl>
 
-  <h3>Per-load command message</h3>
+  <h3>Messaggio comando per carico</h3>
   <dl class="message-properties">
     <dt>msg.topic <span class="property-type">string</span></dt>
     <dd><code>load/&lt;name&gt;</code></dd>
 
     <dt>msg.payload <span class="property-type">boolean</span></dt>
-    <dd><code>true</code> to turn ON, <code>false</code> to turn OFF.</dd>
+    <dd><code>true</code> per accendere, <code>false</code> per spegnere.</dd>
 
     <dt>msg.load <span class="property-type">string</span></dt>
-    <dd>Load name (same as in <code>load/&lt;name&gt;</code>).</dd>
+    <dd>Nome del carico (uguale a <code>load/&lt;name&gt;</code>).</dd>
 
     <dt>msg.reason <span class="property-type">string</span></dt>
     <dd>
-      Why the node decided to switch:
+      Motivo della decisione:
       <code>surplus</code>, <code>surplus_drop</code>, <code>import_limit</code>, <code>cutoff_notice</code>.
     </dd>
 
     <dt>msg.telemetry <span class="property-type">object</span></dt>
-    <dd>Full telemetry snapshot used for the decision (technical details).</dd>
+    <dd>Snapshot completo della telemetria usato per la decisione (dettagli tecnici).</dd>
   </dl>
 
-  <h3>Configuration</h3>
+  <h3>Configurazione</h3>
   <dl class="message-properties">
-    <dt>Device <span class="property-type">alfasinapsi-device</span></dt>
-    <dd>Sinapsi IP address (Modbus/TCP settings are fixed by the device config node).</dd>
+    <dt>Dispositivo <span class="property-type">alfasinapsi-device</span></dt>
+    <dd>Indirizzo IP Sinapsi (impostazioni di comunicazione fisse nel nodo di configurazione).</dd>
 
     <dt>Poll (ms) <span class="property-type">number</span></dt>
-    <dd>How often the controller reads telemetry and evaluates loads.</dd>
+    <dd>Ogni quanto il controller legge la telemetria e valuta i carichi.</dd>
 
-    <dt>Mode <span class="property-type">both | surplus | limit</span></dt>
+    <dt>Modalita <span class="property-type">both | surplus | limit</span></dt>
     <dd>
       <ul>
-        <li><code>surplus</code>: uses exported power to enable/disable loads</li>
-        <li><code>limit</code>: sheds loads when imported power is above the limit</li>
-        <li><code>both</code>: applies <code>limit</code> first, then <code>surplus</code></li>
+        <li><code>surplus</code>: usa l'export per abilitare/disabilitare i carichi</li>
+        <li><code>limit</code>: spegne carichi quando l'import supera il limite</li>
+        <li><code>both</code>: applica prima <code>limit</code>, poi <code>surplus</code></li>
       </ul>
     </dd>
 
-    <dt>Max import (W) <span class="property-type">number</span></dt>
-    <dd>Imported power limit used by <code>limit</code> mode.</dd>
+    <dt>Import massimo (W) <span class="property-type">number</span></dt>
+    <dd>Limite di potenza in import usato dalla modalita <code>limit</code>.</dd>
 
-    <dt>Import hysteresis (W) <span class="property-type">number</span></dt>
+    <dt>Isteresi import (W) <span class="property-type">number</span></dt>
     <dd>
-      To avoid rapid toggling, shedding targets <code>maxImportW - importHysteresisW</code>.
+      Per evitare commutazioni rapide, lo spegnimento mira a <code>maxImportW - importHysteresisW</code>.
     </dd>
 
-    <dt>Surplus reserve (W) <span class="property-type">number</span></dt>
-    <dd>Reserved exported power not used for loads (safety margin).</dd>
+    <dt>Riserva surplus (W) <span class="property-type">number</span></dt>
+    <dd>Export riservato e non usato per i carichi (margine di sicurezza).</dd>
 
-    <dt>Surplus hysteresis (W) <span class="property-type">number</span></dt>
+    <dt>Isteresi surplus (W) <span class="property-type">number</span></dt>
     <dd>
-      Extra margin used when enabling loads to avoid rapid toggling when surplus is close to load power.
+      Margine extra usato quando si abilitano i carichi, per evitare commutazioni rapide quando il surplus e' vicino alla potenza del carico.
     </dd>
 
-    <dt>Cutoff <span class="property-type">boolean</span></dt>
-    <dd>If enabled, a cutoff notice forces all loads OFF.</dd>
+    <dt>Distacco <span class="property-type">boolean</span></dt>
+    <dd>Se abilitato, un avviso distacco forza tutti i carichi OFF.</dd>
 
-    <dt>Loads <span class="property-type">list</span></dt>
-    <dd>List of loads (see below).</dd>
+    <dt>Carichi <span class="property-type">list</span></dt>
+    <dd>Lista dei carichi (vedi sotto).</dd>
   </dl>
 
-  <h3>How the controller works</h3>
-  <p><b>Terminology</b></p>
+  <h3>Come funziona il controller</h3>
+  <p><b>Terminologia</b></p>
   <ul>
-    <li><b>Import</b>: power drawn from the grid (<code>power.importW</code>).</li>
-    <li><b>Export</b>: power fed into the grid (<code>power.exportW</code>).</li>
-    <li><b>Surplus</b>: available excess power. Here it is based on <b>export</b> (optionally reduced by <i>Surplus reserve</i>).</li>
+    <li><b>Import</b>: potenza prelevata dalla rete (<code>power.importW</code>).</li>
+    <li><b>Export</b>: potenza immessa in rete (<code>power.exportW</code>).</li>
+    <li><b>Surplus</b>: potenza in eccesso disponibile. Qui e' basata su <b>export</b> (eventualmente ridotta da <i>Riserva surplus</i>).</li>
   </ul>
   <ul>
-    <li><b>Surplus</b>: uses exported power (<code>power.exportW</code>) to enable loads.</li>
-    <li><b>Import limit</b>: uses imported power (<code>power.importW</code>) to shed loads when above limit.</li>
-    <li><b>Cutoff</b>: if a cutoff notice is present and enabled, it forces all loads OFF.</li>
-    <li><b>Priority</b>: lower number = higher priority (enabled first, shed last).</li>
+    <li><b>Surplus</b>: usa l'export (<code>power.exportW</code>) per abilitare i carichi.</li>
+    <li><b>Import limit</b>: usa l'import (<code>power.importW</code>) per spegnere carichi quando sopra il limite.</li>
+    <li><b>Distacco</b>: se un avviso distacco e' presente ed e' abilitato, forza tutti i carichi OFF.</li>
+    <li><b>Priorita</b>: numero piu basso = priorita piu alta (si accende prima, si spegne per ultimo).</li>
   </ul>
 
-  <h3>Loads configuration</h3>
+  <h3>Configurazione carichi</h3>
   <dl class="message-properties">
-    <dt>Name <span class="property-type">string</span></dt>
-    <dd>Load identifier. Also used for output labels and manual override topic <code>load/&lt;name&gt;</code>.</dd>
+    <dt>Nome <span class="property-type">string</span></dt>
+    <dd>Identificativo del carico. Usato anche come etichetta di uscita e nel topic per override manuale <code>load/&lt;name&gt;</code>.</dd>
 
     <dt>W <span class="property-type">number</span></dt>
-    <dd>Estimated power consumption (Watts). Used to decide how many loads can fit in the available surplus.</dd>
+    <dd>Consumo stimato (Watt). Serve a decidere quanti carichi possono rientrare nel surplus disponibile.</dd>
 
-    <dt>Priority <span class="property-type">number</span></dt>
-    <dd>Lower number = higher priority (kept ON longer).</dd>
+    <dt>Priorita <span class="property-type">number</span></dt>
+    <dd>Numero piu basso = priorita piu alta (tenuto ON piu a lungo).</dd>
 
-    <dt>Min ON (s) / Min OFF (s) <span class="property-type">number</span></dt>
-    <dd>Anti-flapping timers to avoid switching too often.</dd>
+    <dt>Min acceso (s) / Min spento (s) <span class="property-type">number</span></dt>
+    <dd>Timer anti-commutazione per evitare accensioni/spegnimenti troppo frequenti.</dd>
   </dl>
 </script>
 
 <script type="text/javascript">
   (function () {
     function loadDefaults() {
-      return { name: "load", powerW: 800, priority: 50, minOnSec: 0, minOffSec: 0 };
+      return { name: "carico", powerW: 800, priority: 50, minOnSec: 0, minOffSec: 0 };
     }
 
     function safeParseLoads(value) {
@@ -338,17 +338,17 @@
         return 1 + loads.length;
       },
       outputLabels: function (index) {
-        if (index === 0) return "controller";
+        if (index === 0) return "riepilogo";
         try {
           const loads = normaliseLoads(safeParseLoads(this.loads));
           const l = loads[index - 1];
-          return l ? l.name : ("load " + index);
+          return l ? l.name : ("carico " + index);
         } catch (e) {
-          return ("load " + index);
+          return ("carico " + index);
         }
       },
       icon: "font-awesome/fa-toggle-on",
-      label: function () { return this.name || "alfasinapsi load controller"; },
+      label: function () { return this.name || "alfasinapsi controller carichi"; },
       oneditprepare: function () {
         // Migration from older versions (previous property name)
         if (typeof this.forceOffOnCutoff === "undefined" && typeof this.forceOffOnDistacco !== "undefined") {
@@ -382,11 +382,11 @@
             const d = $.extend(loadDefaults(), data);
             const row = $('<div class="alfasinapsi-load-row"></div>').appendTo(container);
 
-            $('<input type="text" class="alf-name" placeholder="Name">').val(d.name).appendTo(row);
+            $('<input type="text" class="alf-name" placeholder="Nome">').val(d.name).appendTo(row);
             $('<input type="number" class="alf-power" placeholder="W">').val(d.powerW).appendTo(row);
-            $('<input type="number" class="alf-priority" placeholder="Priority">').val(d.priority).appendTo(row);
-            $('<input type="number" class="alf-minon" placeholder="Min ON (s)">').val(d.minOnSec).appendTo(row);
-            $('<input type="number" class="alf-minoff" placeholder="Min OFF (s)">').val(d.minOffSec).appendTo(row);
+            $('<input type="number" class="alf-priority" placeholder="Priorita">').val(d.priority).appendTo(row);
+            $('<input type="number" class="alf-minon" placeholder="Min acceso (s)">').val(d.minOnSec).appendTo(row);
+            $('<input type="number" class="alf-minoff" placeholder="Min spento (s)">').val(d.minOffSec).appendTo(row);
 
             row.find("input").on("change keyup", writeBack);
             writeBack();

@@ -8,7 +8,7 @@ module.exports = function (RED) {
 
     const node = this;
 
-    // Fixed settings (to match the stable Modbus client configuration)
+    // Impostazioni fisse (per stabilita)
     node.host = config.host;
     node.port = 502;
     node.unitId = 1;
@@ -76,7 +76,7 @@ module.exports = function (RED) {
           await Promise.race([
             connectPromise,
             delay(connectTimeoutMs).then(() => {
-              throw new Error("Connect timed out");
+              throw new Error("Timeout connessione");
             })
           ]);
           node._client.setID(node.unitId);
@@ -105,7 +105,7 @@ module.exports = function (RED) {
       if (node._connected) return;
       await connectOnce();
       if (!node._connected) {
-        throw new Error("Sinapsi Alfa not connected");
+        throw new Error("Sinapsi Alfa non connesso");
       }
     }
 
@@ -121,8 +121,8 @@ module.exports = function (RED) {
         }
       };
 
-      // Important: do NOT let a previous rejection "poison" the queue forever.
-      // Always run the next item, regardless of whether the previous one failed.
+      // Importante: non lasciare che un errore precedente "avveleni" la coda per sempre.
+      // Esegui sempre l'elemento successivo, anche se il precedente e' fallito.
       node._queue = node._queue.then(run, run);
       return node._queue;
     };

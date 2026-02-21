@@ -4,135 +4,135 @@
   <img src="assets/alfasinapsi-logo.svg" width="520" alt="node-red-contrib-alfasinapsi logo" />
 </p>
 
-Node-RED nodes to connect to **Sinapsi Alfa** over WiFi and build a **load controller**.
+Nodi Node-RED per collegare **Sinapsi Alfa** via WiFi e creare un **controller carichi**.
 
-## Requirements
+## Requisiti
 
-- A reachable Sinapsi Alfa on your WiFi network
+- Un dispositivo Sinapsi Alfa raggiungibile sulla tua rete WiFi
 
-## Quick start (step-by-step)
+## Avvio rapido (passo-passo)
 
-1. Open the Node-RED editor.
-2. In the left palette, search for "alfasinapsi".
-3. Drag **alfasinapsi telemetry** into the flow.
-4. Double-click it and click the **pencil** next to _Device_ to create a new **alfasinapsi device** config.
-5. Fill in:
-   - **Sinapsi IP address**: the IP address of your Sinapsi Alfa (example `192.168.1.186`)
-6. Click **Add** (device), then **Done** (telemetry).
-7. Wire the telemetry output to a **Debug** node and click **Deploy**.
+1. Apri l'editor di Node-RED.
+2. Nella palette a sinistra, cerca "alfasinapsi".
+3. Trascina **alfasinapsi telemetria** nel flow.
+4. Fai doppio click e premi la **matita** vicino a _Dispositivo_ per creare una nuova configurazione **alfasinapsi device**.
+5. Compila:
+   - **Indirizzo IP Sinapsi**: l'indirizzo IP del tuo Sinapsi Alfa (esempio `192.168.1.186`)
+6. Premi **Add**, poi **Done**.
+7. Collega l'uscita del nodo telemetria a un nodo **Debug** e premi **Deploy**.
 
-You should now see messages in the debug sidebar with power and energy values.
+Dovresti vedere i messaggi nella sidebar di debug con valori di potenza ed energia.
 
-## Nodes
+## Nodi
 
 ### `alfasinapsi-telemetry`
 
-Polls Sinapsi Alfa and outputs an object with:
+Interroga Sinapsi Alfa e invia un oggetto con:
 
-- instant power (import, export, production)
-- total energy (import, export, production)
-- yesterday energy by tariff bands F1..F6 (import and export)
-- current tariff band
-- cutoff notice data (event date + remaining seconds)
+- potenza istantanea (import, export, production)
+- energia totale (import, export, production)
+- energia di ieri per fasce tariffarie F1..F6 (import ed export)
+- fascia tariffaria attuale
+- dati di avviso distacco (data evento + secondi rimanenti)
 
 Output:
 
 - `msg.topic = "alfasinapsi/telemetry"`
 - `msg.payload = { ...metrics }`
 
-Configuration:
+Configurazione:
 
-- `Device`: your Sinapsi IP address (connection settings are fixed for stability)
+- `Dispositivo`: IP del tuo Sinapsi (parametri di connessione fissi per stabilita)
 
 ### `alfasinapsi-load-controller`
 
-Reads telemetry directly from Sinapsi Alfa (polling) and decides which loads to switch ON/OFF.
+Legge la telemetria direttamente da Sinapsi Alfa (polling) e decide quali carichi accendere/spegnere.
 
-Output 1: summary (`msg.topic = "alfasinapsi/controller"`).  
-Output 2..N+1: ON/OFF command for each load (boolean payload).
+Uscita 1: riepilogo (`msg.topic = "alfasinapsi/controller"`).  
+Uscite 2..N+1: comando ON/OFF per ogni carico (payload booleano).
 
-Algorithm (configurable):
+Algoritmo (configurabile):
 
-- **Surplus**: enables loads when there is enough **export** to grid (W).
-- **Import limit**: disables loads when **import** exceeds a threshold (W).
-- **Cutoff notice**: if present, disables everything (forced).
+- **Surplus**: abilita i carichi quando c'e abbastanza **export** verso rete (W).
+- **Limite import**: disabilita i carichi quando **import** supera una soglia (W).
+- **Avviso distacco**: se presente, spegne tutto (forzato).
 
-Notes:
+Note:
 
-- Per-load commands are `msg.payload = true/false` with `msg.topic = "load/<name>"`.
-- You can override a load by sending an input message with `topic = "load/<name>"` and boolean `payload`.
+- I comandi per singolo carico sono `msg.payload = true/false` con `msg.topic = "load/<name>"`.
+- Puoi forzare un carico inviando un messaggio in ingresso con `topic = "load/<name>"` e `payload` booleano.
 
-## Node details (beginner-friendly)
+## Dettagli (per utenti inesperti)
 
-### 1) `alfasinapsi-device` (configuration node)
+### 1) `alfasinapsi-device` (nodo di configurazione)
 
-This node does not appear in your flow as a normal node. It is a shared configuration used by the other nodes.
+Questo nodo non appare nel flow come un nodo normale. E' una configurazione condivisa usata dagli altri nodi.
 
-Main field:
+Campo principale:
 
-- **Sinapsi IP address**: IP address or hostname of the Sinapsi Alfa device
+- **Indirizzo IP Sinapsi**: indirizzo IP o hostname del dispositivo Sinapsi Alfa
 
-Fixed settings (not configurable):
+Impostazioni fisse (non modificabili):
 
-- Connection profile is fixed for stability (you only need the IP address).
+- Il profilo di connessione e' fisso per stabilita (serve solo l'indirizzo IP).
 
-### 2) `alfasinapsi-telemetry` (read-only measurements)
+### 2) `alfasinapsi-telemetry` (misure in sola lettura)
 
-This node reads measurements every _Poll (ms)_ and outputs a single message.
+Questo nodo legge le misure ogni _Poll (ms)_ e invia un singolo messaggio.
 
-Typical use:
+Uso tipico:
 
-- Wire it to a **Debug** node to inspect values.
-- Wire it to a **Dashboard** (or your own logic) to display or process power/energy.
+- Collegalo a un nodo **Debug** per vedere i valori.
+- Collegalo a una **Dashboard** (o alla tua logica) per visualizzare o usare potenza/energia.
 
-Message structure (high level):
+Struttura del messaggio (alto livello):
 
-- `msg.payload` - simplified fields for everyday use:
+- `msg.payload` - campi semplificati per l'uso quotidiano:
   - `payload.power.importkW` / `exportkW` / `productionkW`
   - `payload.energy.importTotalkWh` / `exportTotalkWh` / `productionTotalkWh`
   - `payload.tariffBand`
   - `payload.cutoff.hasWarning` / `payload.cutoff.atIso`
-- `msg.insight` - technical details:
-  - `insight.telemetry`: full decoded telemetry (includes additional fields like yesterday bands, quarter averages, etc.)
-  - `insight.meta`: timestamp, read mode
-  - `insight.device`: connection profile details
+- `msg.insight` - dettagli tecnici:
+  - `insight.telemetry`: telemetria completa decodificata (include campi extra come fasce di ieri, medie di quarto d'ora, ecc.)
+  - `insight.meta`: timestamp, modalita di lettura
+  - `insight.device`: dettagli del profilo di connessione
 
-## Terminology (import/export/surplus)
+## Terminologia (import/export/surplus)
 
-These are standard power-flow terms used in energy monitoring:
+Questi sono termini standard nel monitoraggio energetico:
 
-- **Import**: power/energy drawn from the grid (you are consuming more than you produce).
-- **Export**: power/energy fed into the grid (you are producing more than you consume).
-- **Surplus**: available excess power. In this package, surplus logic is based on **export** (optionally reduced by _Surplus reserve_).
+- **Import**: potenza/energia prelevata dalla rete (stai consumando piu di quanto produci).
+- **Export**: potenza/energia immessa in rete (stai producendo piu di quanto consumi).
+- **Surplus**: potenza in eccesso disponibile. In questo pacchetto la logica surplus si basa su **export** (eventualmente ridotto da _Surplus reserve_).
 
-### 3) `alfasinapsi-load-controller` (decisions only)
+### 3) `alfasinapsi-load-controller` (solo decisioni)
 
-This node reads telemetry (it does its own polling) and outputs:
+Questo nodo legge la telemetria (fa polling in autonomia) e invia:
 
-- Output 1: a **summary** of current power and controller state
-- Output 2..N+1: a boolean command for each configured load
+- Uscita 1: un **riepilogo** della potenza attuale e dello stato del controller
+- Uscite 2..N+1: un comando booleano per ogni carico configurato
 
-Important: this node **does not switch relays by itself**. You must connect each load output to something that actually turns devices ON/OFF (for example MQTT, Shelly nodes, Home Assistant service calls, etc.).
+Importante: questo nodo **non comanda i relè da solo**. Devi collegare ogni uscita carico a qualcosa che accende/spegne davvero i dispositivi (per esempio MQTT, nodi Shelly, chiamate di servizio Home Assistant, ecc.).
 
-How to configure loads:
+Come configurare i carichi:
 
-- **Name**: used for the output label and for manual override (`load/<name>`)
-- **W**: expected power consumption of that load (used to estimate how many loads can fit into the available surplus)
-- **Priority**: lower number = higher priority (kept ON longer)
-- **Min ON (s)**: minimum time the load stays ON before it can be turned OFF again
-- **Min OFF (s)**: minimum time the load stays OFF before it can be turned ON again
+- **Nome**: usato come etichetta di uscita e per l'override manuale (`load/<name>`)
+- **W**: consumo atteso del carico (serve a stimare quanti carichi possono rientrare nel surplus disponibile)
+- **Priorita**: numero piu basso = priorita piu alta (tenuto ON piu a lungo)
+- **Min acceso (s)**: tempo minimo in cui il carico resta acceso prima di poter essere spento
+- **Min spento (s)**: tempo minimo in cui il carico resta spento prima di poter essere acceso
 
-Manual override (optional):
+Override manuale (opzionale):
 
-Send a message into the node input:
+Invia un messaggio all'ingresso del nodo:
 
 - `msg.topic = "load/<name>"`
 - `msg.payload = true` (force desired ON) or `false` (force desired OFF)
 
-## CONNECTION ISSUES? REMEMBER
+## Problemi di connessione? Ricorda
 
-- The Alfa Device from Sinapsi, currently accepts no more than 1 connection.
+- Sinapsi Alfa in genere accetta una sola connessione alla volta: evita di collegare piu sistemi contemporaneamente.
 
-## Example
+## Esempio
 
-See `examples/alfasinapsi-load-controller.json`.
+Vedi `examples/alfasinapsi-load-controller.json`.

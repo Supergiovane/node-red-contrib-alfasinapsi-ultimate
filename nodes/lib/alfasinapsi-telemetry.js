@@ -13,7 +13,7 @@ function decodeUint32(words, wordOrder) {
 }
 
 function isNoCutoffWarning(eventEpoch) {
-  // In HA: > 4294967294 => no warning
+  // In HA: > 4294967294 => nessun avviso
   return Number(eventEpoch) > 4294967294;
 }
 
@@ -78,7 +78,7 @@ function buildTelemetry(raw, wordOrder) {
 }
 
 async function readTelemetry(device, options = {}) {
-  // De-duplicate concurrent callers (telemetry node + load controller) so the device is not polled twice.
+  // Deduplica chiamate concorrenti (telemetria + controller carichi) per non interrogare il dispositivo due volte.
   if (device && device._alfasinapsiTelemetryInFlight) {
     return device._alfasinapsiTelemetryInFlight;
   }
@@ -93,7 +93,7 @@ async function readTelemetry(device, options = {}) {
     const rawByAddress = Object.create(null);
 
     for (const group of groups) {
-      // Fixed FC3: Read Holding Registers
+      // FC3 fisso: lettura registri holding
       const res = await device.readHoldingRegisters(group.start, group.count);
       const data = res?.data || res || [];
 
@@ -130,7 +130,7 @@ async function readTelemetry(device, options = {}) {
       if (count === 1 && typeof cached0 !== "undefined") return [cached0];
       if (count === 2 && typeof cached0 !== "undefined" && typeof cached1 !== "undefined") return [cached0, cached1];
 
-      // Fixed FC3: Read Holding Registers
+      // FC3 fisso: lettura registri holding
       const res = await device.readHoldingRegisters(address, count);
       const data = res?.data || res || [];
       for (let i = 0; i < count; i++) {
@@ -163,7 +163,7 @@ async function readTelemetry(device, options = {}) {
       device._alfasinapsiTelemetryMode = mode;
       return buildTelemetry(decoded, wordOrder);
     } catch (err) {
-      // Some devices don't like wide range reads; fall back to single-register reads.
+      // Alcuni dispositivi non gradiscono letture su range ampi: fallback a letture a singolo registro.
       try {
         const decoded = await readSingle();
         device._alfasinapsiTelemetryMode = "single";

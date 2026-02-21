@@ -1,7 +1,7 @@
 "use strict";
 
-// Registers taken from the Home Assistant reference files in `documents/`.
-// Note: addresses are Modbus holding registers (FC3) as used in Home Assistant.
+// Registri presi dai file di riferimento Home Assistant in `documents/`.
+// Nota: gli indirizzi sono registri holding (FC3) come usati in Home Assistant.
 
 const DEFAULT_REGISTERS = Object.freeze({
   powerImportW: { address: 2, type: "uint16" },
@@ -28,7 +28,7 @@ const DEFAULT_REGISTERS = Object.freeze({
 
   currentTariffBand: { address: 203, type: "uint16" },
 
-  // Cutoff notice (HA template in `documents/distacco.yaml.txt`)
+  // Avviso distacco (template HA in `documents/distacco.yaml.txt`)
   cutoffEventEpoch: { address: 780, type: "uint32" },
   cutoffRemainingSeconds: { address: 782, type: "uint16" },
 
@@ -36,8 +36,8 @@ const DEFAULT_REGISTERS = Object.freeze({
   energyProductionTotalWh: { address: 924, type: "uint32" }
 });
 
-// Read groups (start + count) to minimize Modbus requests.
-// Each group must include the addresses for the registers above.
+// Gruppi di lettura (start + count) per ridurre le richieste.
+// Ogni gruppo deve includere gli indirizzi dei registri sopra.
 const DEFAULT_READ_GROUPS = Object.freeze([
   { start: 2, count: 18 }, // 2..19
   { start: 30, count: 35 }, // 30..64
