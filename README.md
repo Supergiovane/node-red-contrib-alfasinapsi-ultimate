@@ -49,22 +49,31 @@ Interroga Sinapsi Alfa e, in base alla configurazione <i>Compatibilita</i>, invi
 
 - **Telemetria** (default): un messaggio con misure semplificate + dettagli tecnici.
 - **KNX Load Control PIN**: un messaggio compatibile con l'ingresso del nodo KNX Load Control (es. `knxUltimateLoadControl`) per forzare shed/unshed.
+- **Stato connessione**: quando cambia lo stato del dispositivo, invia un messaggio di stato.
 
 Output:
 
 - Modalita <b>Telemetria</b>:
   - `msg.topic = "alfasinapsi/telemetry"`
-  - `msg.payload` (semplificato): potenza (kW), energia totale (kWh), fascia tariffaria, avviso distacco
+  - `msg.payload` (semplificato): potenza/energia (import/export/production), fascia tariffaria, avviso distacco + timestamp
   - `msg.insight` (tecnico): telemetria completa decodificata (include campi extra come fasce di ieri, medie di quarto d'ora, ecc.)
+  - `msg.status`: stato connessione corrente
 - Modalita <b>KNX Load Control PIN</b> (ogni 10s):
   - `msg.topic = "alfasinapsi/telemetry/knx-load-control-pin"`
   - `msg.payload = "shed" | "unshed"`
   - `msg.shedding = "shed" | "unshed"`
+  - `msg.status`: stato connessione corrente
+- Messaggio <b>Stato connessione</b> (solo quando cambia):
+  - `msg.topic = "alfasinapsi/telemetry/status"`
+  - `msg.payload = msg.status`
 
 Configurazione:
 
 - `Dispositivo`: IP del tuo Sinapsi (parametri di connessione fissi per stabilita)
+- `Poll (ms)`: ogni quanto il nodo legge i dati
+- `Solo se cambia`: se abilitato, emette solo quando cambiano i valori principali
 - `Compatibilita`: seleziona <i>Telemetria</i> oppure <i>KNX Load Control PIN</i>
+  - Nota: in modalita <i>KNX Load Control PIN</i> emette ogni 10s (il polling interno viene limitato a 10s e <i>Solo se cambia</i> non si applica).
 
 ### `alfasinapsi-load-controller`
 
@@ -100,12 +109,18 @@ Impostazioni fisse (non modificabili):
 
 ### 2) `alfasinapsi-telemetry` (misure in sola lettura)
 
-Questo nodo legge le misure ogni _Poll (ms)_ e invia un singolo messaggio.
+Questo nodo legge le misure ogni _Poll (ms)_ e invia messaggi dal suo unico output.
+
+In piu:
+
+- Ogni messaggio include `msg.status` (stato connessione corrente).
+- Quando cambia lo stato di connessione, emette anche un messaggio dedicato con `msg.topic = "alfasinapsi/telemetry/status"`.
 
 Puoi scegliere cosa emettere dall'output con <i>Compatibilita</i>:
 
 - <b>Telemetria</b>: messaggio con misure + dettagli tecnici.
 - <b>KNX Load Control PIN</b>: messaggio `shed/unshed` ogni 10 secondi (compatibile con il nodo KNX Load Control).
+  - Nota: in questa modalita <i>Solo se cambia</i> non si applica e il polling interno viene limitato a 10s (anche se imposti un Poll piu alto).
 
 Uso tipico:
 
@@ -119,10 +134,16 @@ Struttura del messaggio (modalita <b>Telemetria</b>):
   - `payload.energy.importTotalkWh` / `exportTotalkWh` / `productionTotalkWh`
   - `payload.tariffBand`
   - `payload.cutoff.hasWarning` / `payload.cutoff.remainingSeconds` / `payload.cutoff.atIso`
+  - `payload.messageAtIso` / `payload.meterReadAtIso`
 - `msg.insight` - dettagli tecnici:
   - `insight.telemetry`: telemetria completa decodificata (include campi extra come fasce di ieri, medie di quarto d'ora, ecc.)
   - `insight.meta`: timestamp, modalita di lettura
   - `insight.device`: dettagli del profilo di connessione
+- `msg.status` - stato connessione:
+  - `status.connected` (boolean)
+  - `status.connecting` (boolean)
+  - `status.error` (string|null)
+  - `status.ts` (number, epoch ms)
 
 Struttura del messaggio (modalita <b>KNX Load Control PIN</b>):
 
