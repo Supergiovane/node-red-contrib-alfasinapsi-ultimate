@@ -182,11 +182,21 @@
   <ul>
     <li><b>Uscita 1</b> (<code>alfasinapsi/controller</code>): riepilogo (potenza + stati desiderati)</li>
     <li><b>Uscite 2..N+1</b>: una uscita per ogni carico configurato (comando booleano)</li>
+    <li><b>Stato connessione</b>: quando cambia lo stato del dispositivo, invia un messaggio su <b>Uscita 1</b> con <code>msg.topic = alfasinapsi/controller/status</code> e <code>msg.status</code> (e <code>msg.payload</code> uguale a <code>msg.status</code>).</li>
   </ul>
   <p>
     Nota: le uscite dei singoli carichi inviano un messaggio solo quando il nodo cambia lo stato desiderato (e quando i timer Min acceso/spento lo permettono).
     Altrimenti, in quel ciclo, quella uscita non emette nulla.
   </p>
+
+  <h3>msg.status (stato connessione)</h3>
+  <p>I messaggi emessi includono <code>msg.status</code>, con:</p>
+  <ul>
+    <li><code>status.connected</code> (boolean)</li>
+    <li><code>status.connecting</code> (boolean)</li>
+    <li><code>status.error</code> (string|null)</li>
+    <li><code>status.ts</code> (number, epoch ms)</li>
+  </ul>
 
   <h3>Messaggio uscita 1</h3>
   <dl class="message-properties">
@@ -197,8 +207,10 @@
     <dd>
       Oggetto riepilogo con:
       <ul>
+        <li><code>payload.ts</code> (number, epoch ms della lettura)</li>
+        <li><code>payload.messageAtIso</code>, <code>payload.meterReadAtIso</code></li>
         <li><code>payload.power.importW</code>, <code>payload.power.exportW</code>, <code>payload.power.productionW</code> (Watts)</li>
-        <li><code>payload.cutoff.hasWarning</code></li>
+        <li><code>payload.cutoff.hasWarning</code>, <code>payload.cutoff.remainingSeconds</code>, <code>payload.cutoff.atIso</code></li>
         <li><code>payload.mode</code></li>
         <li><code>payload.loads[]</code> (name, desired, powerW, priority)</li>
       </ul>
@@ -224,6 +236,9 @@
 
     <dt>msg.telemetry <span class="property-type">object</span></dt>
     <dd>Snapshot completo della telemetria usato per la decisione (dettagli tecnici).</dd>
+
+    <dt>msg.status <span class="property-type">object</span></dt>
+    <dd>Stato connessione al dispositivo (vedi <i>msg.status</i> sopra).</dd>
   </dl>
 
   <h3>Configurazione</h3>
@@ -265,6 +280,32 @@
     <dt>Carichi <span class="property-type">list</span></dt>
     <dd>Lista dei carichi (vedi sotto).</dd>
   </dl>
+
+  <h3>Modalita: esempi</h3>
+  <p>
+    Esempi con 2 carichi:
+    <code>boiler</code> = 1000W (priorita 10), <code>ev</code> = 2000W (priorita 50).
+    Riserva surplus = 200W, isteresi surplus = 100W, import massimo = 3000W, isteresi import = 150W.
+  </p>
+
+  <h4>1) Solo surplus (<code>surplus</code>)</h4>
+  <p>
+    Se <code>exportW = 2500</code>, il surplus utilizzabile e' circa <code>2500 - 200 = 2300W</code> (target con isteresi: <code>2400W</code>).
+    Il nodo puo accendere <code>boiler</code> (1000W) ma non <code>ev</code> (totale 3000W &gt; 2400W).
+    Se l'export scende molto, spegne prima i carichi a priorita piu bassa.
+  </p>
+
+  <h4>2) Solo limite import (<code>limit</code>)</h4>
+  <p>
+    Se <code>importW = 3300</code>, lo spegnimento mira a <code>maxImportW - importHysteresisW = 2850W</code>.
+    Il nodo spegne carichi (prima quelli a priorita piu bassa) finche la stima di import rientra sotto ~2850W.
+  </p>
+
+  <h4>3) Surplus + limite import (<code>both</code>)</h4>
+  <p>
+    Il nodo usa entrambe le logiche: prova ad accendere carichi con il surplus, ma se per qualunque motivo l'import supera il limite (stima potenze non perfetta, carichi reali diversi, ecc.),
+    spegne i meno prioritari per rientrare nel limite. In pratica e' la modalita piu “sicura” per evitare picchi di import.
+  </p>
 
   <h3>Come funziona il controller</h3>
   <p><b>Terminologia</b></p>
@@ -333,10 +374,7 @@
         loads: { value: "[]" }
       },
       inputs: 1,
-      outputs: function () {
-        const loads = normaliseLoads(safeParseLoads(this.loads));
-        return 1 + loads.length;
-      },
+      outputs: 1,
       outputLabels: function (index) {
         if (index === 0) return "riepilogo";
         try {
@@ -349,6 +387,14 @@
       },
       icon: "font-awesome/fa-toggle-on",
       label: function () { return this.name || "alfasinapsi controller carichi"; },
+      onadd: function () {
+        try {
+          const loads = normaliseLoads(safeParseLoads(this.loads));
+          this.outputs = 1 + loads.length;
+        } catch (e) {
+          this.outputs = 1;
+        }
+      },
       oneditprepare: function () {
         // Migration from older versions (previous property name)
         if (typeof this.forceOffOnCutoff === "undefined" && typeof this.forceOffOnDistacco !== "undefined") {

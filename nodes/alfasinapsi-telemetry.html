@@ -32,6 +32,16 @@
   <ul>
     <li><b>Telemetria</b>: invia il messaggio principale con <code>msg.payload</code> (semplificato) e <code>msg.insight</code> (tecnico).</li>
     <li><b>KNX Load Control PIN</b>: invia un telegramma compatibile con l'ingresso del nodo KNX Load Control: <code>msg.shedding</code> = <code>shed</code>/<code>unshed</code> ogni 10s.</li>
+    <li><b>Stato connessione</b>: quando cambia lo stato del dispositivo, invia un messaggio con <code>msg.topic = alfasinapsi/telemetry/status</code> e <code>msg.status</code>.</li>
+  </ul>
+
+  <h3>msg.status (stato connessione)</h3>
+  <p>Ogni messaggio emesso include <code>msg.status</code>, con:</p>
+  <ul>
+    <li><code>status.connected</code> (boolean)</li>
+    <li><code>status.connecting</code> (boolean)</li>
+    <li><code>status.error</code> (string|null)</li>
+    <li><code>status.ts</code> (number, epoch ms)</li>
   </ul>
 
   <h3>Output: Telemetria</h3>
@@ -51,7 +61,8 @@
     <li><code>payload.power.importkW</code>, <code>payload.power.exportkW</code>, <code>payload.power.productionkW</code></li>
     <li><code>payload.energy.importTotalkWh</code>, <code>payload.energy.exportTotalkWh</code>, <code>payload.energy.productionTotalkWh</code></li>
     <li><code>payload.tariffBand</code></li>
-    <li><code>payload.cutoff.hasWarning</code>, <code>payload.cutoff.atIso</code></li>
+    <li><code>payload.cutoff.hasWarning</code>, <code>payload.cutoff.remainingSeconds</code>, <code>payload.cutoff.atIso</code></li>
+    <li><code>payload.messageAtIso</code>, <code>payload.meterReadAtIso</code></li>
   </ul>
 
   <h3>Terminologia</h3>

@@ -19,6 +19,12 @@ function nowMs() {
   return Date.now();
 }
 
+function toIso(ms) {
+  const d = new Date(Number(ms));
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
 module.exports = function (RED) {
   function AlfaSinapsiLoadControllerNode(config) {
     try {
@@ -89,6 +95,33 @@ module.exports = function (RED) {
         return;
       }
 
+    let currentStatus = { connected: false, connecting: false, error: null, ts: Date.now() };
+    let lastStatusSignature = null;
+
+    const normaliseStatus = (s) => {
+      const connected = !!s?.connected;
+      const connecting = !!s?.connecting;
+      const error = s?.error ? String(s.error) : null;
+      return { connected, connecting, error, ts: Date.now() };
+    };
+
+    const emitStatusIfChanged = (nextStatus, reason) => {
+      const signature = JSON.stringify({
+        connected: !!nextStatus?.connected,
+        connecting: !!nextStatus?.connecting,
+        error: nextStatus?.error ? String(nextStatus.error).slice(0, 64) : null
+      });
+      currentStatus = nextStatus;
+      if (signature === lastStatusSignature) return;
+      lastStatusSignature = signature;
+      safeSend({
+        topic: "alfasinapsi/controller/status",
+        payload: currentStatus,
+        status: currentStatus,
+        reason: reason || "status"
+      });
+    };
+
     const stateByName = new Map();
     for (const load of node._loads) {
       stateByName.set(load.name, {
@@ -102,6 +135,7 @@ module.exports = function (RED) {
           if (s.connecting) safeStatus({ fill: "yellow", shape: "ring", text: "in connessione" });
           else if (s.connected) safeStatus({ fill: "green", shape: "dot", text: "connesso" });
           else safeStatus({ fill: "red", shape: "ring", text: s.error ? `errore: ${s.error}` : "disconnesso" });
+          emitStatusIfChanged(normaliseStatus(s), "device");
         } catch (err) {
           reportError(err, "onStatus");
         }
@@ -253,6 +287,8 @@ module.exports = function (RED) {
 
           const summary = {
             ts: telemetry.ts,
+            messageAtIso: toIso(Date.now()),
+            meterReadAtIso: toIso(telemetry?.ts ?? Date.now()),
             power: telemetry.power,
             cutoff: telemetry.cutoff,
             mode: node.mode,
@@ -265,10 +301,11 @@ module.exports = function (RED) {
           };
 
           const out = new Array(1 + node._loads.length).fill(null);
-          out[0] = { topic: "alfasinapsi/controller", payload: summary };
+          out[0] = { topic: "alfasinapsi/controller", payload: summary, status: currentStatus };
 
           const actions = computeActions(telemetry);
           for (const action of actions) {
+            if (action.msg) action.msg.status = currentStatus;
             out[action.output] = action.msg;
           }
 
@@ -277,6 +314,7 @@ module.exports = function (RED) {
           const message = err?.message || String(err);
           const text = /timed out/i.test(message) ? "timeout" : `errore: ${message}`;
           safeStatus({ fill: "red", shape: "ring", text: String(text).slice(0, 32) });
+          emitStatusIfChanged(normaliseStatus({ connected: false, connecting: false, error: message }), "error");
           try {
             node.error(message, {
               topic: "alfasinapsi/controller/error",

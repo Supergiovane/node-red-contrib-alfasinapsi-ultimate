@@ -114,7 +114,7 @@ Struttura del messaggio (modalita <b>Telemetria</b>):
   - `payload.power.importkW` / `exportkW` / `productionkW`
   - `payload.energy.importTotalkWh` / `exportTotalkWh` / `productionTotalkWh`
   - `payload.tariffBand`
-  - `payload.cutoff.hasWarning` / `payload.cutoff.atIso`
+  - `payload.cutoff.hasWarning` / `payload.cutoff.remainingSeconds` / `payload.cutoff.atIso`
 - `msg.insight` - dettagli tecnici:
   - `insight.telemetry`: telemetria completa decodificata (include campi extra come fasce di ieri, medie di quarto d'ora, ecc.)
   - `insight.meta`: timestamp, modalita di lettura

@@ -21,6 +21,7 @@ module.exports = function (RED) {
   }
 
   function simplifyTelemetry(telemetry) {
+    const hasWarning = !!telemetry?.cutoff?.hasWarning;
     return {
       power: {
         importkW: wToKw(telemetry?.power?.importW),
@@ -34,10 +35,17 @@ module.exports = function (RED) {
       },
       tariffBand: Number(telemetry?.tariffBand ?? 0),
       cutoff: {
-        hasWarning: !!telemetry?.cutoff?.hasWarning,
+        hasWarning,
+        remainingSeconds: hasWarning ? Number(telemetry?.cutoff?.remainingSeconds ?? 0) : null,
         atIso: telemetry?.cutoff?.atIso ?? null
       }
     };
+  }
+
+  function toIso(ms) {
+    const d = new Date(Number(ms));
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
   }
 
   function AlfaSinapsiTelemetryNode(config) {
@@ -91,7 +99,8 @@ module.exports = function (RED) {
         return;
       }
 
-      node.device = RED.nodes.getNode(config.device);
+      const deviceId = config.device;
+      node.device = null;
       node.sendOnChange = !!config.sendOnChange;
       node.compatibility = config.compatibility || COMPATIBILITY_TELEMETRY;
 
@@ -104,42 +113,70 @@ module.exports = function (RED) {
         node.pollInterval = Math.min(node.pollInterval, KNX_LOAD_CONTROL_PIN_INTERVAL_MS);
       }
 
-      if (!node.device) {
-        safeStatus({ fill: "red", shape: "ring", text: "dispositivo non configurato" });
-        return;
-      }
-
-      let lastPayload = null;
+      let lastPayloadCore = null;
       let timer = null;
       let knxLoadControlPinTimer = null;
       let inFlight = false;
       let lastHasCutoffWarning = null;
+      let currentStatus = { connected: false, connecting: false, error: null, ts: Date.now() };
+      let lastStatusSignature = null;
+      let bootstrapDone = false;
+      let resolveTimer = null;
+
+      const normaliseStatus = (s) => {
+        const connected = !!s?.connected;
+        const connecting = !!s?.connecting;
+        const error = s?.error ? String(s.error) : null;
+        return { connected, connecting, error, ts: Date.now() };
+      };
+
+      const emitStatusIfChanged = (nextStatus, reason) => {
+        const signature = JSON.stringify({
+          connected: !!nextStatus?.connected,
+          connecting: !!nextStatus?.connecting,
+          error: nextStatus?.error ? String(nextStatus.error).slice(0, 64) : null
+        });
+        currentStatus = nextStatus;
+        if (signature === lastStatusSignature) return;
+        lastStatusSignature = signature;
+        safeSend({
+          topic: "alfasinapsi/telemetry/status",
+          payload: currentStatus,
+          status: currentStatus,
+          reason: reason || "status"
+        });
+      };
 
       const onStatus = (s) => {
         try {
           if (s.connecting) safeStatus({ fill: "yellow", shape: "ring", text: "in connessione" });
           else if (s.connected) safeStatus({ fill: "green", shape: "dot", text: "connesso" });
           else safeStatus({ fill: "red", shape: "ring", text: s.error ? `errore: ${s.error}` : "disconnesso" });
+          emitStatusIfChanged(normaliseStatus(s), "device");
         } catch (err) {
           reportError(err, "onStatus");
         }
       };
-      try {
-        node.device.on("alfasinapsi:status", onStatus);
-      } catch (err) {
-        reportError(err, "device.on");
-      }
 
       async function tick() {
         if (inFlight) return;
         inFlight = true;
         try {
+          if (!node.device) {
+            safeStatus({ fill: "red", shape: "ring", text: "dispositivo non configurato" });
+            return;
+          }
           const telemetry = await readTelemetry(node.device, { wordOrder: node.device.wordOrder });
           lastHasCutoffWarning = !!telemetry?.cutoff?.hasWarning;
 
           if (!telemetryEnabled) return;
 
-          const payload = simplifyTelemetry(telemetry);
+          const payloadCore = simplifyTelemetry(telemetry);
+          const payload = {
+            ...payloadCore,
+            messageAtIso: toIso(Date.now()),
+            meterReadAtIso: toIso(telemetry?.ts ?? Date.now())
+          };
           const insight = {
             telemetry,
             meta: {
@@ -157,17 +194,18 @@ module.exports = function (RED) {
             }
           };
 
-          if (node.sendOnChange && lastPayload) {
-            const same = JSON.stringify(payload) === JSON.stringify(lastPayload);
+          if (node.sendOnChange && lastPayloadCore) {
+            const same = JSON.stringify(payloadCore) === JSON.stringify(lastPayloadCore);
             if (same) return;
           }
 
-          lastPayload = payload;
-          safeSend({ topic: "alfasinapsi/telemetry", payload, insight });
+          lastPayloadCore = payloadCore;
+          safeSend({ topic: "alfasinapsi/telemetry", payload, insight, status: currentStatus });
         } catch (err) {
           const message = err?.message || String(err);
           const text = /timed out/i.test(message) ? "timeout" : `errore: ${message}`;
           safeStatus({ fill: "red", shape: "ring", text: String(text).slice(0, 32) });
+          emitStatusIfChanged(normaliseStatus({ connected: false, connecting: false, error: message }), "error");
           try {
             node.error(message, {
               topic: "alfasinapsi/telemetry/error",
@@ -181,29 +219,60 @@ module.exports = function (RED) {
         }
       }
 
-      if (knxLoadControlPinEnabled) {
-        knxLoadControlPinTimer = setInterval(() => {
-          try {
-            if (lastHasCutoffWarning == null) return;
-            const shedding = lastHasCutoffWarning ? "shed" : "unshed";
-            safeSend({
-              topic: "alfasinapsi/telemetry/knx-load-control-pin",
-              payload: shedding,
-              shedding
-            });
-          } catch (err) {
-            reportError(err, "knx interval");
-          }
-        }, KNX_LOAD_CONTROL_PIN_INTERVAL_MS);
-      }
+      const bootstrap = () => {
+        if (bootstrapDone) return;
+        if (!node.device) return;
+        bootstrapDone = true;
 
-      timer = setInterval(() => {
-        tick().catch((err) => reportError(err, "tick(unhandled)"));
-      }, node.pollInterval);
-      tick().catch((err) => reportError(err, "tick(first)"));
+        try {
+          node.device.on("alfasinapsi:status", onStatus);
+        } catch (err) {
+          reportError(err, "device.on");
+        }
+
+        if (knxLoadControlPinEnabled) {
+          knxLoadControlPinTimer = setInterval(() => {
+            try {
+              if (lastHasCutoffWarning == null) return;
+              const shedding = lastHasCutoffWarning ? "shed" : "unshed";
+              safeSend({
+                topic: "alfasinapsi/telemetry/knx-load-control-pin",
+                payload: shedding,
+                shedding,
+                status: currentStatus
+              });
+            } catch (err) {
+              reportError(err, "knx interval");
+            }
+          }, KNX_LOAD_CONTROL_PIN_INTERVAL_MS);
+        }
+
+        timer = setInterval(() => {
+          tick().catch((err) => reportError(err, "tick(unhandled)"));
+        }, node.pollInterval);
+        tick().catch((err) => reportError(err, "tick(first)"));
+      };
+
+      const resolveDevice = () => {
+        try {
+          node.device = RED.nodes.getNode(deviceId);
+        } catch (err) {
+          node.device = null;
+          reportError(err, "getNode(device)");
+        }
+        if (node.device) {
+          bootstrap();
+          return;
+        }
+        safeStatus({ fill: "red", shape: "ring", text: "dispositivo non configurato" });
+        resolveTimer = setTimeout(resolveDevice, 1000);
+      };
+      resolveDevice();
 
       node.on("close", (removed, done) => {
         try {
+          if (resolveTimer) clearTimeout(resolveTimer);
+          resolveTimer = null;
           if (timer) clearInterval(timer);
           timer = null;
           if (knxLoadControlPinTimer) clearInterval(knxLoadControlPinTimer);

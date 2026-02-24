@@ -76,6 +76,13 @@ module.exports = function (RED) {
 
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+    const awaitWithTimeout = async (promise, timeoutMs) => {
+      const p = Promise.resolve(promise);
+      // Prevent late rejections from becoming unhandled if we stop awaiting.
+      p.catch(() => undefined);
+      await Promise.race([p, delay(timeoutMs)]);
+    };
+
     async function destroyClient(client) {
       if (!client) return;
       try {
@@ -85,7 +92,8 @@ module.exports = function (RED) {
         // ignore
       }
       try {
-        await client.close();
+        // modbus-serial close() can occasionally hang; keep Node-RED shutdown responsive.
+        await awaitWithTimeout(client.close(), 750);
       } catch (_) {
         // ignore
       }
@@ -229,7 +237,9 @@ module.exports = function (RED) {
           node._closing = true;
           if (node._reconnectTimer) clearTimeout(node._reconnectTimer);
           node._reconnectTimer = null;
-          await destroyClient(node._client);
+          // Node-RED will log "Close timed out" if done() isn't called in time.
+          // Ensure we never block shutdown for too long.
+          await awaitWithTimeout(destroyClient(node._client), 1500);
         } catch (err) {
           reportError(err, "close");
         } finally {
