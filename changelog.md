@@ -3,6 +3,13 @@
 <br/>
 
 <p>
+<b>Version 1.1.1</b> - February 2026<br/>
+- DOC: added YouTube video link to node edit panels and help panels.<br/>
+- DOC: added YouTube section + thumbnail image to README.<br/>
+- ASSET: added/optimized README thumbnail image (<code>assets/main.png</code>).<br/>
+</p>
+
+<p>
 <b>Version 1.1.0</b> - February 2026<br/>
 - BREAKING CHANGE: <code>alfasinapsi-load-controller</code> redesigned to work only with Telemetry input (<code>msg.payload.cutoff.hasWarning</code>), removing KNX load-control compatibility handling.<br/>
 - BREAKING CHANGE: <code>alfasinapsi-load-controller</code> outputs changed: now one output per configured load (min 1), each message is <code>msg.topic = &lt;load name&gt;</code> and <code>msg.payload = true/false</code> (unshed/shed). Summary output removed.<br/>

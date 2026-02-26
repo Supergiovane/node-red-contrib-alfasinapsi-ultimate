@@ -14,6 +14,16 @@
 
 Nodi Node-RED per collegare **Sinapsi Alfa** via WiFi e creare un **controller carichi**.
 
+## Video YouTube
+
+[Guarda il video](https://youtu.be/R-7PZv3iJ2s)
+
+<p align="center">
+  <a href="https://youtu.be/R-7PZv3iJ2s" target="_blank" rel="noopener noreferrer">
+    <img src="assets/main.png" width="720" alt="Video: AlfaSinapsi Ultimate - Load controller" />
+  </a>
+</p>
+
 ## Requisiti
 
 - Un dispositivo Sinapsi Alfa raggiungibile sulla tua rete WiFi

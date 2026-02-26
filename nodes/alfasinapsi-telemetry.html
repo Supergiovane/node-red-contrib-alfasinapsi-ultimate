@@ -1,5 +1,10 @@
 <script type="text/html" data-template-name="alfasinapsi-telemetry">
   <div class="form-row">
+    <label><i class="fa fa-youtube-play" style="color:#ff0000;"></i> Video</label>
+    <a href="https://youtu.be/R-7PZv3iJ2s" target="_blank" rel="noopener noreferrer">Guarda su YouTube</a>
+  </div>
+
+  <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Nome</label>
     <input type="text" id="node-input-name" placeholder="telemetria">
   </div>
@@ -26,6 +31,9 @@
 
 <script type="text/html" data-help-name="alfasinapsi-telemetry">
 	  <p><b>Telemetria Sinapsi Alfa</b> legge i dati da Sinapsi Alfa e invia messaggi dal suo unico output, in base alla compatibilita selezionata.</p>
+
+	  <h3>Video YouTube</h3>
+	  <p><a href="https://youtu.be/R-7PZv3iJ2s" target="_blank" rel="noopener noreferrer">Guarda il video: configurazione e utilizzo</a></p>
 
 	  <h3>Importante: frequenza (Poll)</h3>
 	  <p>
@@ -141,7 +149,7 @@
 <script type="text/javascript">
   (function () {
     RED.nodes.registerType('alfasinapsi-telemetry', {
-      category: 'energy',
+      category: 'AlfaSinapsi Ultimate',
       color: '#00BAFF',
       defaults: {
         name: { value: "" },

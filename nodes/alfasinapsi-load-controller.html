@@ -1,79 +1,84 @@
-	<style>
-	  /* Make form fields more compact (keep whitespace on the right) */
-	  #node-input-name {
-	    width: 420px;
-	    max-width: 100%;
-	  }
+<style>
+	/* Make form fields more compact (keep whitespace on the right) */
+	#node-input-name {
+		width: 420px;
+		max-width: 100%;
+	}
 
-	  #node-input-name {
-	    width: 360px;
-	  }
+	#node-input-name {
+		width: 360px;
+	}
 
-  .alfasinapsi-loads .red-ui-editableList-container {
-    min-height: 240px;
-  }
+	.alfasinapsi-loads .red-ui-editableList-container {
+		min-height: 240px;
+	}
 
-  .alfasinapsi-loads-title {
-    margin-top: 10px;
-    margin-bottom: 4px;
-    font-weight: 600;
-  }
+	.alfasinapsi-loads-title {
+		margin-top: 10px;
+		margin-bottom: 4px;
+		font-weight: 600;
+	}
 
-  .alfasinapsi-loads-title i {
-    margin-right: 6px;
-  }
+	.alfasinapsi-loads-title i {
+		margin-right: 6px;
+	}
 
-	  .alfasinapsi-loads-container {
-	    display: block;
-	    width: 100%;
-	    /* Fixed-width columns keep the inputs compact (extra space remains on the right). */
-		    --alfasinapsi-load-cols: minmax(220px, 320px) 130px 130px;
-	    --alfasinapsi-load-gap: 2px;
-	  }
+	.alfasinapsi-loads-container {
+		display: block;
+		width: 100%;
+		/* Fixed-width columns keep the inputs compact (extra space remains on the right). */
+		--alfasinapsi-load-cols: minmax(220px, 320px) 130px 130px;
+		--alfasinapsi-load-gap: 2px;
+	}
 
-  .alfasinapsi-loads-columns {
-    display: grid;
-    grid-template-columns: var(--alfasinapsi-load-cols);
-    gap: var(--alfasinapsi-load-gap);
-    width: fit-content;
-    padding-left: 28px;
-    /* draggable handle space */
-    padding-right: 40px;
-    /* remove button space */
-    margin-bottom: 6px;
-    font-size: 12px;
-    opacity: 0.75;
-    box-sizing: border-box;
-  }
+	.alfasinapsi-loads-columns {
+		display: grid;
+		grid-template-columns: var(--alfasinapsi-load-cols);
+		gap: var(--alfasinapsi-load-gap);
+		width: fit-content;
+		padding-left: 28px;
+		/* draggable handle space */
+		padding-right: 40px;
+		/* remove button space */
+		margin-bottom: 6px;
+		font-size: 12px;
+		opacity: 0.75;
+		box-sizing: border-box;
+	}
 
-  .alfasinapsi-loads-columns div {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+	.alfasinapsi-loads-columns div {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
 
-  .alfasinapsi-load-row {
-    display: grid;
-    grid-template-columns: var(--alfasinapsi-load-cols);
-    gap: var(--alfasinapsi-load-gap);
-    width: fit-content;
-    align-items: center;
-  }
+	.alfasinapsi-load-row {
+		display: grid;
+		grid-template-columns: var(--alfasinapsi-load-cols);
+		gap: var(--alfasinapsi-load-gap);
+		width: fit-content;
+		align-items: center;
+	}
 
-  .alfasinapsi-load-row input {
-    width: 100% !important;
-    min-width: 0;
-    box-sizing: border-box;
-  }
+	.alfasinapsi-load-row input {
+		width: 100% !important;
+		min-width: 0;
+		box-sizing: border-box;
+	}
 
-  /* Reduce extra vertical padding added by editableList */
-  .alfasinapsi-loads .red-ui-editableList-item-content {
-    padding-top: 6px;
-    padding-bottom: 6px;
-  }
+	/* Reduce extra vertical padding added by editableList */
+	.alfasinapsi-loads .red-ui-editableList-item-content {
+		padding-top: 6px;
+		padding-bottom: 6px;
+	}
 </style>
 
-	<script type="text/html" data-template-name="alfasinapsi-load-controller">
+<script type="text/html" data-template-name="alfasinapsi-load-controller">
+		  <div class="form-row">
+		    <label><i class="fa fa-youtube-play" style="color:#ff0000;"></i> Video</label>
+		    <a href="https://youtu.be/R-7PZv3iJ2s" target="_blank" rel="noopener noreferrer">Guarda su YouTube</a>
+		  </div>
+
 		  <div class="form-row">
 		    <label for="node-input-name"><i class="fa fa-tag"></i> Nome</label>
 		    <input type="text" id="node-input-name" placeholder="controller carichi">
@@ -95,11 +100,14 @@
 	  </div>
 </script>
 
-	<script type="text/html" data-help-name="alfasinapsi-load-controller">
+<script type="text/html" data-help-name="alfasinapsi-load-controller">
 	  <p>
 	    <b>Sinapsi Alfa load controller</b> gestisce uno <b>shedding stage</b> (0..N) usando i messaggi in formato <b>Telemetria</b>.
 	    In particolare usa <code>msg.payload.cutoff.hasWarning</code> per incrementare/decrementare lo stage.
 	  </p>
+
+	  <h3>Video YouTube</h3>
+	  <p><a href="https://youtu.be/R-7PZv3iJ2s" target="_blank" rel="noopener noreferrer">Guarda il video: configurazione e utilizzo</a></p>
 
   <h3>Importante</h3>
   <p>
@@ -165,119 +173,119 @@
 </script>
 
 <script type="text/javascript">
-  (function () {
-	    function loadDefaults() {
-	      return { name: "carico", minOnSec: 0, minOffSec: 0 };
-	    }
+	(function () {
+		function loadDefaults() {
+			return { name: "carico", minOnSec: 0, minOffSec: 0 };
+		}
 
-    function safeParseLoads(value) {
-      if (Array.isArray(value)) return value;
-      if (typeof value !== "string") return [];
-      try {
-        const parsed = JSON.parse(value || "[]");
-        return Array.isArray(parsed) ? parsed : [];
-      } catch (e) {
-        return [];
-      }
-    }
+		function safeParseLoads(value) {
+			if (Array.isArray(value)) return value;
+			if (typeof value !== "string") return [];
+			try {
+				const parsed = JSON.parse(value || "[]");
+				return Array.isArray(parsed) ? parsed : [];
+			} catch (e) {
+				return [];
+			}
+		}
 
-    function normaliseLoads(list) {
-      return (list || []).filter(l => l && l.name);
-    }
+		function normaliseLoads(list) {
+			return (list || []).filter(l => l && l.name);
+		}
 
-	    RED.nodes.registerType('alfasinapsi-load-controller', {
-	      category: 'energy',
-	      color: '#00BAFF',
-	      defaults: {
-	        name: { value: "" },
-	        loads: { value: "[]" },
-	        outputs: { value: 1 }
-	      },
-	      inputs: 1,
-	      outputs: 1,
-	      outputLabels: function (index) {
-	        try {
-	          const loads = normaliseLoads(safeParseLoads(this.loads));
-	          const l = loads[index];
-	          return l ? l.name : ("carico " + (index + 1));
-	        } catch (e) {
-	          return ("carico " + (index + 1));
-	        }
-	      },
-	      icon: "font-awesome/fa-toggle-on",
-	      label: function () { return this.name || "alfasinapsi controller carichi"; },
-	      onadd: function () {
-	        const updateOutputs = () => {
-	          try {
-	            const loads = normaliseLoads(safeParseLoads(this.loads));
-	            const next = Math.max(1, loads.length);
-	            if (this.outputs !== next) this.outputs = next;
-	            if (Array.isArray(this.wires)) {
-	              while (this.wires.length < this.outputs) this.wires.push([]);
-	            }
-	          } catch (e) {
-	            this.outputs = 1;
-	          }
-	          try {
-	            RED.view?.redraw?.();
-	          } catch (e) {
-	            // ignore
-	          }
-	        };
-	        updateOutputs();
-	        // Defer once so `this.loads` is reliably populated when loading flows at startup.
-	        setTimeout(updateOutputs, 0);
-		      },
-	      oneditprepare: function () {
-	        const list = $("#node-input-loads-list");
-	        const loads = normaliseLoads(safeParseLoads(this.loads));
+		RED.nodes.registerType('alfasinapsi-load-controller', {
+			category: 'AlfaSinapsi Ultimate',
+			color: '#00BAFF',
+			defaults: {
+				name: { value: "" },
+				loads: { value: "[]" },
+				outputs: { value: 1 }
+			},
+			inputs: 1,
+			outputs: 1,
+			outputLabels: function (index) {
+				try {
+					const loads = normaliseLoads(safeParseLoads(this.loads));
+					const l = loads[index];
+					return l ? l.name : ("carico " + (index + 1));
+				} catch (e) {
+					return ("carico " + (index + 1));
+				}
+			},
+			icon: "font-awesome/fa-toggle-on",
+			label: function () { return this.name || "alfasinapsi controller carichi"; },
+			onadd: function () {
+				const updateOutputs = () => {
+					try {
+						const loads = normaliseLoads(safeParseLoads(this.loads));
+						const next = Math.max(1, loads.length);
+						if (this.outputs !== next) this.outputs = next;
+						if (Array.isArray(this.wires)) {
+							while (this.wires.length < this.outputs) this.wires.push([]);
+						}
+					} catch (e) {
+						this.outputs = 1;
+					}
+					try {
+						RED.view?.redraw?.();
+					} catch (e) {
+						// ignore
+					}
+				};
+				updateOutputs();
+				// Defer once so `this.loads` is reliably populated when loading flows at startup.
+				setTimeout(updateOutputs, 0);
+			},
+			oneditprepare: function () {
+				const list = $("#node-input-loads-list");
+				const loads = normaliseLoads(safeParseLoads(this.loads));
 
-        function writeBack() {
-          const items = [];
-		          list.editableList('items').each(function (i) {
-		            const row = $(this);
-		            items.push({
-		              name: row.find(".alf-name").val(),
-		              minOnSec: Number(row.find(".alf-minon").val()),
-		              minOffSec: Number(row.find(".alf-minoff").val())
-		            });
-		          });
-          $("#node-input-loads").val(JSON.stringify(normaliseLoads(items)));
-        }
+				function writeBack() {
+					const items = [];
+					list.editableList('items').each(function (i) {
+						const row = $(this);
+						items.push({
+							name: row.find(".alf-name").val(),
+							minOnSec: Number(row.find(".alf-minon").val()),
+							minOffSec: Number(row.find(".alf-minoff").val())
+						});
+					});
+					$("#node-input-loads").val(JSON.stringify(normaliseLoads(items)));
+				}
 
-        list.editableList({
-          addButton: true,
-          removable: true,
-          sortable: true,
-		          addItem: function (container, i, data) {
-		            const d = $.extend(loadDefaults(), data);
-		            const row = $('<div class="alfasinapsi-load-row"></div>').appendTo(container);
+				list.editableList({
+					addButton: true,
+					removable: true,
+					sortable: true,
+					addItem: function (container, i, data) {
+						const d = $.extend(loadDefaults(), data);
+						const row = $('<div class="alfasinapsi-load-row"></div>').appendTo(container);
 
-		            $('<input type="text" class="alf-name" placeholder="Nome">').val(d.name).appendTo(row);
-		            $('<input type="number" class="alf-minon" placeholder="Min acceso (s)">').val(d.minOnSec).appendTo(row);
-		            $('<input type="number" class="alf-minoff" placeholder="Min spento (s)">').val(d.minOffSec).appendTo(row);
+						$('<input type="text" class="alf-name" placeholder="Nome">').val(d.name).appendTo(row);
+						$('<input type="number" class="alf-minon" placeholder="Min acceso (s)">').val(d.minOnSec).appendTo(row);
+						$('<input type="number" class="alf-minoff" placeholder="Min spento (s)">').val(d.minOffSec).appendTo(row);
 
-	            row.find("input").on("change keyup", writeBack);
-	            writeBack();
-	          },
-          removeItem: function () { writeBack(); },
-          sortItems: function () { writeBack(); }
-        });
+						row.find("input").on("change keyup", writeBack);
+						writeBack();
+					},
+					removeItem: function () { writeBack(); },
+					sortItems: function () { writeBack(); }
+				});
 
-        loads.forEach(l => list.editableList('addItem', l));
-        writeBack();
-      },
-	      oneditsave: function () {
-	        try {
-	          const loads = normaliseLoads(safeParseLoads($("#node-input-loads").val() || "[]"));
-	          this.outputs = Math.max(1, loads.length);
-	          if (Array.isArray(this.wires)) {
-	            while (this.wires.length < this.outputs) this.wires.push([]);
-	          }
-	        } catch (e) {
-	          this.outputs = 1;
-	        }
-	      }
-	    });
-  })();
+				loads.forEach(l => list.editableList('addItem', l));
+				writeBack();
+			},
+			oneditsave: function () {
+				try {
+					const loads = normaliseLoads(safeParseLoads($("#node-input-loads").val() || "[]"));
+					this.outputs = Math.max(1, loads.length);
+					if (Array.isArray(this.wires)) {
+						while (this.wires.length < this.outputs) this.wires.push([]);
+					}
+				} catch (e) {
+					this.outputs = 1;
+				}
+			}
+		});
+	})();
 </script>
