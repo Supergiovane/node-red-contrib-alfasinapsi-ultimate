@@ -2,6 +2,8 @@
   <img src="assets/alfasinapsi-logo.svg" width="520" alt="node-red-contrib-alfasinapsi-ultimate logo" />
 </p>
 
+Nodi Node-RED per collegare **Sinapsi Alfa** via WiFi e creare un **controller carichi**.
+
 [![NPM version][npm-version-image]][npm-url]
 [![Node.js version][node-version-image]][npm-url]
 [![Node-RED Flow Library][flows-image]][flows-url]
@@ -12,7 +14,10 @@
 [![JavaScript Style Guide][standard-image]][standard-url]
 [![Youtube][youtube-image]][youtube-url]
 
-Nodi Node-RED per collegare **Sinapsi Alfa** via WiFi e creare un **controller carichi**.
+<p align="center">
+  <img src="img/readmemain.png" alt="AlfaSinapsi Ultimate for Node-RED — Max Supervibe" width="70%">
+</p>
+
 
 ## Video YouTube
 
