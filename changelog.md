@@ -3,6 +3,11 @@
 <br/>
 
 <p>
+<b>Version 1.1.8</b> - July 2026<br/>
+- DOCS: new Max Supervibe app-icon logo and README banner.<br/>
+</p>
+
+<p>
 <b>Version 1.1.7</b> - April 2026<br/>
 - CHORE: patch release per allineare il versioning del pacchetto e il changelog.<br/>
 </p>
