@@ -7,9 +7,17 @@
     "node-red-contrib",
     "modbus",
     "energy",
+    "power",
+    "smart-meter",
+    "photovoltaic",
+    "monitoring",
     "sinapsi",
     "alfa",
-    "load-control"
+    "load-control",
+    "load-controller",
+    "knx",
+    "iot",
+    "home-automation"
   ],
   "license": "MIT",
   "author": "supergiovane",
