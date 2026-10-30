@@ -173,7 +173,7 @@ module.exports = function (RED) {
       const telemetryValuesPinsEnabled = telemetryEnabled && node.telemetryPinsMode === TELEMETRY_PINS_MODE_VALUES;
       const knxUnshedIntervalMs = node.unshedDelayMin > 0
         ? node.unshedDelayMin * 60 * 1000
-        : 10 * 60 * 1000;
+        : node.pollInterval;
 
       let lastPayloadCore = null;
       let timer = null;

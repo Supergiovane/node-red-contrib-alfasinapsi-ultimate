@@ -84,6 +84,11 @@
 		    <input type="text" id="node-input-name" placeholder="controller carichi">
 		  </div>
 
+		  <div class="form-row">
+		    <label for="node-input-unshedDelayMin"><i class="fa fa-clock-o"></i> Ritardo unshed (minuti)</label>
+		    <input type="number" id="node-input-unshedDelayMin" min="0" step="any" placeholder="0">
+		  </div>
+
 	  <div class="form-row alfasinapsi-loads-title">
 	    <span><i class="fa fa-list"></i> Carichi</span>
 	  </div>
@@ -102,8 +107,8 @@
 
 <script type="text/html" data-help-name="alfasinapsi-load-controller">
 	  <p>
-	    <b>Sinapsi Alfa load controller</b> gestisce uno <b>shedding stage</b> (0..N) usando i messaggi in formato <b>Telemetria</b>.
-	    In particolare usa <code>msg.payload.cutoff.hasWarning</code> per incrementare/decrementare lo stage.
+	    <b>Sinapsi Alfa load controller</b> gestisce uno <b>shedding stage</b> (0..N) usando i messaggi del nodo <code>alfasinapsi-telemetry</code>
+	    (modalita <i>Telemetria</i>, PIN <code>cutoff.hasWarning</code> oppure <i>KNX Load Control PIN</i>) per incrementare/decrementare lo stage.
 	  </p>
 
 	  <h3>Video YouTube</h3>
@@ -120,11 +125,17 @@
 		  <dl class="message-properties">
 		    <dt>Shedding</dt>
 		    <dd>
-	      Questo nodo accetta solo messaggi in formato <b>Telemetria</b> (output del nodo <code>alfasinapsi-telemetry</code> in modalita <i>Telemetria</i>).
-	      Usa <code>msg.payload.cutoff.hasWarning</code> (<code>true</code>/<code>false</code>) per decidere se incrementare o decrementare lo stage.
+	      Formati accettati (output del nodo <code>alfasinapsi-telemetry</code>):
+	      <ul>
+	        <li><b>Telemetria</b> (PIN singolo): <code>msg.payload.cutoff.hasWarning</code> (<code>true</code> = shed, <code>false</code> = unshed).</li>
+	        <li><b>PIN cutoff.hasWarning</b> (modalita 6 PIN) o qualsiasi boolean: <code>msg.payload</code> <code>true</code> = shed, <code>false</code> = unshed.</li>
+	        <li><b>KNX Load Control PIN</b>: <code>msg.payload</code> (o <code>msg.shedding</code>) = <code>"shed"</code> / <code>"unshed"</code>.</li>
+	      </ul>
+	      Gli altri messaggi (es. stato connessione) aggiornano solo lo stato del nodo.
 	      <p>
-	        Nota: lo <b>stage cambia di 1 per ogni messaggio</b> ricevuto. Quindi la velocita dello shedding dipende dalla frequenza dei messaggi in ingresso
-	        (per esempio dipende dal <i>Poll (ms)</i> del nodo <code>alfasinapsi-telemetry</code>).
+	        Nota: ogni <code>shed</code> aumenta lo stage di 1, quindi la velocita dello shedding dipende dalla frequenza dei messaggi in ingresso
+	        (per esempio dal <i>Poll (ms)</i> del nodo <code>alfasinapsi-telemetry</code>).
+	        Ogni <code>unshed</code> riduce lo stage di 1, ma solo se e' trascorso almeno il <i>Ritardo unshed (minuti)</i> dall'ultimo <code>shed</code> o dall'ultimo cambio di stage.
 		      </p>
 		    </dd>
 		  </dl>
@@ -142,6 +153,7 @@
 	  </p>
 	  <p>
 	    I timer <i>Min acceso</i>/<i>Min spento</i> limitano le commutazioni e vengono sempre rispettati.
+	    Se un timer blocca una commutazione, il nodo la esegue automaticamente appena il timer scade, senza attendere un nuovo messaggio.
 	  </p>
 
 	  <h3>Messaggio comando per carico</h3>
@@ -157,6 +169,13 @@
   <dl class="message-properties">
     <dt>Carichi <span class="property-type">list</span></dt>
     <dd>Lista dei carichi (vedi sotto).</dd>
+
+    <dt>Ritardo unshed (minuti) <span class="property-type">number</span></dt>
+    <dd>
+      Tempo minimo tra l'ultimo <code>shed</code> (o l'ultimo cambio di stage) e il ripristino del carico successivo.
+      I carichi vengono quindi riaccesi uno alla volta, uno ogni N minuti dalla fine dell'allarme.
+      Con <code>0</code> lo stage scende di 1 a ogni messaggio <code>unshed</code> ricevuto (es. a ogni <i>Poll</i> in modalita Telemetria).
+    </dd>
   </dl>
 
   <h3>Configurazione carichi</h3>
@@ -198,6 +217,7 @@
 			color: '#00BAFF',
 			defaults: {
 				name: { value: "" },
+				unshedDelayMin: { value: 5, validate: RED.validators.number(true) },
 				loads: { value: "[]" },
 				outputs: { value: 1 }
 			},
@@ -276,6 +296,7 @@
 				writeBack();
 			},
 			oneditsave: function () {
+				this.unshedDelayMin = Math.max(0, Number($("#node-input-unshedDelayMin").val()) || 0);
 				try {
 					const loads = normaliseLoads(safeParseLoads($("#node-input-loads").val() || "[]"));
 					this.outputs = Math.max(1, loads.length);

@@ -3,6 +3,14 @@
 <br/>
 
 <p>
+<b>Version 1.1.9</b> - October 2026<br/>
+- NEW: load-controller has a new <code>Ritardo unshed (minuti)</code> setting: after the last <code>shed</code> (or stage change), each load is restored only after N minutes. Previously the stage dropped at every telemetry message (every <code>Poll</code> seconds). Default for new nodes: 5 minutes; existing nodes keep the old behavior (<code>0</code>) until edited.<br/>
+- NEW: load-controller now also accepts <code>"shed"</code>/<code>"unshed"</code> strings (<code>KNX Load Control PIN</code> mode, <code>msg.payload</code> or <code>msg.shedding</code>) and boolean payloads (the <code>cutoff.hasWarning</code> telemetry pin).<br/>
+- FIX: load-controller now applies switches blocked by <code>Min acceso</code>/<code>Min spento</code> as soon as the timer expires, instead of waiting for the next input message.<br/>
+- FIX: telemetry <code>KNX Load Control PIN</code> mode with <code>Intervallo unshed = 0</code> now really falls back to <code>Poll (ms)</code> as documented (it was using a fixed 10 minutes).<br/>
+</p>
+
+<p>
 <b>Version 1.1.8</b> - July 2026<br/>
 - DOCS: new Max Supervibe app-icon logo and README banner.<br/>
 </p>

@@ -115,7 +115,7 @@ Struttura del messaggio (modalita <b>Telemetria</b>):
 Struttura del messaggio (modalita <b>KNX Load Control PIN</b>):
 
 - Se c'e un avviso distacco imminente: `msg.payload = "shed"` a ogni `Poll (ms)` (continuamente)
-- Se non c'e allarme: `msg.payload = "unshed"` periodicamente ogni `Intervallo unshed (min)`, a partire dall'avvio del nodo
+- Se non c'e allarme: `msg.payload = "unshed"` periodicamente ogni `Intervallo unshed (min)`, a partire dall'avvio del nodo (con `0` usa la frequenza di `Poll (ms)`)
 - `msg.shedding` con lo stesso valore
 - In modalita KNX, `Solo se cambia` e' ignorato
 
@@ -135,13 +135,21 @@ Termini usati nel payload:
 
 ### 3) `alfasinapsi-load-controller`
 
-Questo nodo <b>non fa polling</b>. Riceve in ingresso messaggi <b>Telemetria</b> (output del nodo <code>alfasinapsi-telemetry</code> in modalita <i>Telemetria</i>) e usa <code>payload.cutoff.hasWarning</code> per decidere se spegnere o riaccendere i carichi, uno alla volta, seguendo l'ordine della lista. Invia:
+Questo nodo <b>non fa polling</b>. Riceve in ingresso i messaggi del nodo <code>alfasinapsi-telemetry</code> e decide se spegnere o riaccendere i carichi, uno alla volta, seguendo l'ordine della lista. Formati accettati:
+
+- **Telemetria** (PIN singolo): `msg.payload.cutoff.hasWarning` (`true` = shed, `false` = unshed)
+- **PIN `cutoff.hasWarning`** (modalita 6 PIN) o qualsiasi boolean: `msg.payload` `true` = shed, `false` = unshed
+- **KNX Load Control PIN**: `msg.payload` (o `msg.shedding`) = `"shed"` / `"unshed"`
+
+Invia:
 
 - Una uscita per ogni carico configurato, che emette <code>true/false</code> (unshed/shed) con <code>msg.topic</code> uguale al nome del carico.
 
 Importante: questo nodo **non comanda i relè da solo**. Devi collegare ogni uscita carico a qualcosa che accende/spegne davvero i dispositivi (per esempio MQTT, nodi Shelly, chiamate di servizio Home Assistant, ecc.).
 
-Nota: il controller cambia un carico alla volta; la velocita dipende da quanto spesso arrivano messaggi dalla telemetria (<i>Poll</i>).
+Nota: il controller cambia un carico alla volta. Lo shedding avanza di un carico a ogni `shed` ricevuto (quindi dipende dal <i>Poll</i> della telemetria); il ripristino avanza di un carico solo se e' trascorso il <b>Ritardo unshed (minuti)</b> dall'ultimo `shed` o dall'ultimo cambio di stage.
+
+- **Ritardo unshed (minuti)**: tempo minimo tra un ripristino e il successivo (e dalla fine dell'allarme). Con `0` lo stage scende a ogni messaggio `unshed`.
 
 Come configurare i carichi:
 
@@ -149,6 +157,8 @@ Come configurare i carichi:
 - **Ordine in lista**: la posizione nella lista determina la priorita (dall'alto verso il basso)
 - **Min acceso (s)**: tempo minimo in cui il carico resta acceso prima di poter essere spento
 - **Min spento (s)**: tempo minimo in cui il carico resta spento prima di poter essere acceso
+
+Se un timer Min acceso/spento blocca una commutazione, il controller la esegue automaticamente appena il timer scade.
 
 ## Problemi di connessione? Ricorda
 

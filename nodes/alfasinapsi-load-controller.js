@@ -66,6 +66,9 @@ module.exports = function (RED) {
     try {
       const loads = safeJsonParse(config.loads, []);
       node._loads = Array.isArray(loads) ? loads : [];
+      // Minimo intervallo (minuti) tra l'ultimo cambio di stage e il successivo unshed. 0 = a ogni messaggio.
+      node.unshedDelayMin = Math.max(0, Number(config.unshedDelayMin || 0));
+      const unshedDelayMs = node.unshedDelayMin * 60 * 1000;
 
       let currentStatus = { connected: false, connecting: false, error: null, ts: Date.now() };
 
@@ -85,25 +88,32 @@ module.exports = function (RED) {
         stateByName.set(load.name, { enabled: true, lastChangeMs: nowMs() });
       }
 
-      function canToggle(load, st, nextEnabled) {
+      // Millisecondi mancanti prima che il carico possa commutare (0 = puo commutare subito).
+      function toggleWaitMs(load, st, nextEnabled) {
         const minOnMs = Math.max(0, Number(load.minOnSec || 0)) * 1000;
         const minOffMs = Math.max(0, Number(load.minOffSec || 0)) * 1000;
         const elapsed = nowMs() - (st.lastChangeMs || 0);
 
         if (nextEnabled === false && st.enabled === true) {
-          if (elapsed < minOnMs) return false;
+          return Math.max(0, minOnMs - elapsed);
         }
         if (nextEnabled === true && st.enabled === false) {
-          if (elapsed < minOffMs) return false;
+          return Math.max(0, minOffMs - elapsed);
         }
-        return true;
+        return 0;
       }
+
+      let pendingWaitMs = null;
 
       function setEnabled(load, enabled) {
         const st = stateByName.get(load.name);
         if (!st) return null;
         if (st.enabled === enabled) return null;
-        if (!canToggle(load, st, enabled)) return null;
+        const waitMs = toggleWaitMs(load, st, enabled);
+        if (waitMs > 0) {
+          pendingWaitMs = pendingWaitMs == null ? waitMs : Math.min(pendingWaitMs, waitMs);
+          return null;
+        }
 
         st.enabled = enabled;
         st.lastChangeMs = nowMs();
@@ -115,6 +125,8 @@ module.exports = function (RED) {
       }
 
       let stage = 0;
+      let lastStageChangeMs = nowMs();
+      let reapplyTimer = null;
 
       function computeDesiredEnabledByName(stageValue) {
         const maxStage = node._loads.length;
@@ -130,6 +142,10 @@ module.exports = function (RED) {
       }
 
       function applyStage() {
+        if (reapplyTimer) clearTimeout(reapplyTimer);
+        reapplyTimer = null;
+        pendingWaitMs = null;
+
         const desired = computeDesiredEnabledByName(stage);
         stage = desired.stage;
 
@@ -148,12 +164,30 @@ module.exports = function (RED) {
         });
 
         if (out.some((m) => m != null)) safeSend(out);
+
+        // Se un timer Min acceso/spento ha bloccato una commutazione, riprova appena scade
+        // (senza attendere il prossimo messaggio in ingresso).
+        if (pendingWaitMs != null) {
+          reapplyTimer = setTimeout(() => {
+            reapplyTimer = null;
+            try {
+              applyStage();
+            } catch (err) {
+              reportError(err, "reapply");
+            }
+          }, pendingWaitMs + 50);
+        }
       }
 
       function updateStageFromSignal(signal) {
         const maxStage = node._loads.length;
+        const prevStage = stage;
         if (signal === "shed") stage = clampInt(stage + 1, 0, maxStage);
-        if (signal === "unshed") stage = clampInt(stage - 1, 0, maxStage);
+        if (signal === "unshed" && nowMs() - lastStageChangeMs >= unshedDelayMs) {
+          stage = clampInt(stage - 1, 0, maxStage);
+        }
+        // Il ritardo unshed parte dall'ultimo shed ricevuto (allarme ancora attivo) o dall'ultimo cambio di stage.
+        if (signal === "shed" || stage !== prevStage) lastStageChangeMs = nowMs();
 
         const text = `stage ${stage}/${maxStage}`;
         if (currentStatus?.connecting) safeStatus({ fill: "yellow", shape: "ring", text });
@@ -169,9 +203,22 @@ module.exports = function (RED) {
         currentStatus = normaliseStatus(msg.status);
       }
 
+      function normaliseSignalString(value) {
+        if (typeof value !== "string") return null;
+        const v = value.trim().toLowerCase();
+        return v === "shed" || v === "unshed" ? v : null;
+      }
+
+      // Formati accettati:
+      // - Telemetria completa: msg.payload.cutoff.hasWarning (boolean)
+      // - KNX Load Control PIN: msg.payload / msg.shedding = "shed" | "unshed"
+      // - PIN cutoff.hasWarning (o qualsiasi boolean): msg.payload true = shed, false = unshed
       function extractSignal(msg) {
         if (!msg || typeof msg !== "object") return null;
         if (typeof msg.payload?.cutoff?.hasWarning === "boolean") return msg.payload.cutoff.hasWarning ? "shed" : "unshed";
+        const fromString = normaliseSignalString(msg.payload) || normaliseSignalString(msg.shedding);
+        if (fromString) return fromString;
+        if (typeof msg.payload === "boolean") return msg.payload ? "shed" : "unshed";
         return null;
       }
 
@@ -199,6 +246,8 @@ module.exports = function (RED) {
       safeStatus({ fill: "grey", shape: "ring", text: `stage ${stage}/${node._loads.length}` });
 
       node.on("close", (removed, done) => {
+        if (reapplyTimer) clearTimeout(reapplyTimer);
+        reapplyTimer = null;
         try {
           done();
         } catch (_) {

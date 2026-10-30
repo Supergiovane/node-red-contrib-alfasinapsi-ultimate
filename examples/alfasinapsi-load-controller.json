@@ -96,6 +96,7 @@
     "type": "alfasinapsi-load-controller",
     "z": "9d9c4e4a1f2b93b1",
     "name": "Controllo Carichi",
+    "unshedDelayMin": 1,
     "loads": "[{\"name\":\"Lavastoviglie\",\"minOnSec\":60,\"minOffSec\":60},{\"name\":\"Forno\",\"minOnSec\":30,\"minOffSec\":30}]",
     "outputs": 2,
     "x": 450,
