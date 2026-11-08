@@ -240,7 +240,9 @@ module.exports = function (RED) {
             if (hasWarning) {
               shedding = "shed";
               shouldSend = true; // In allarme: invia shed a ogni poll.
-              nextKnxUnshedAtMs = 0;
+              // Il primo unshed dopo l'allarme parte solo dopo un intero intervallo dall'ultimo shed,
+              // altrimenti il carico appena staccato verrebbe riattaccato al poll successivo (flapping).
+              nextKnxUnshedAtMs = now + knxUnshedIntervalMs;
             } else if (nextKnxUnshedAtMs === 0 || now >= nextKnxUnshedAtMs) {
               shedding = "unshed";
               shouldSend = true; // No allarme: invia unshed a intervallo unshedDelayMin.

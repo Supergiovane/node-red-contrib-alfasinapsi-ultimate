@@ -3,6 +3,12 @@
 <br/>
 
 <p>
+<b>Version 1.1.10</b> - November 2026<br/>
+- FIX: telemetry <code>KNX Load Control PIN</code> mode sent <code>unshed</code> at the very next poll after the alarm ended, ignoring <code>Intervallo unshed (minuti)</code>, so the downstream load was reconnected right after being disconnected (flapping). Now the first <code>unshed</code> is sent one full interval after the last <code>shed</code>, then one every interval.<br/>
+- FIX: load-controller now restores one load at every <code>Ritardo unshed (minuti)</code> expiry with an internal timer, after an <code>unshed</code> signal. Previously a load was restored only when a new <code>unshed</code> message arrived after the delay, so with rare messages (e.g. send on change) the restore stalled.<br/>
+</p>
+
+<p>
 <b>Version 1.1.9</b> - October 2026<br/>
 - NEW: load-controller has a new <code>Ritardo unshed (minuti)</code> setting: after the last <code>shed</code> (or stage change), each load is restored only after N minutes. Previously the stage dropped at every telemetry message (every <code>Poll</code> seconds). Default for new nodes: 5 minutes; existing nodes keep the old behavior (<code>0</code>) until edited.<br/>
 - NEW: load-controller now also accepts <code>"shed"</code>/<code>"unshed"</code> strings (<code>KNX Load Control PIN</code> mode, <code>msg.payload</code> or <code>msg.shedding</code>) and boolean payloads (the <code>cutoff.hasWarning</code> telemetry pin).<br/>

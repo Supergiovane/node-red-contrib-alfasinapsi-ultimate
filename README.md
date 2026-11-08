@@ -115,7 +115,7 @@ Struttura del messaggio (modalita <b>Telemetria</b>):
 Struttura del messaggio (modalita <b>KNX Load Control PIN</b>):
 
 - Se c'e un avviso distacco imminente: `msg.payload = "shed"` a ogni `Poll (ms)` (continuamente)
-- Se non c'e allarme: `msg.payload = "unshed"` periodicamente ogni `Intervallo unshed (min)`, a partire dall'avvio del nodo (con `0` usa la frequenza di `Poll (ms)`)
+- Se non c'e allarme: `msg.payload = "unshed"` periodicamente ogni `Intervallo unshed (min)`, a partire dall'avvio del nodo; dopo un allarme il primo `unshed` arriva solo `Intervallo unshed (min)` dopo l'ultimo `shed` (con `0` usa la frequenza di `Poll (ms)`)
 - `msg.shedding` con lo stesso valore
 - In modalita KNX, `Solo se cambia` e' ignorato
 
@@ -147,9 +147,9 @@ Invia:
 
 Importante: questo nodo **non comanda i relè da solo**. Devi collegare ogni uscita carico a qualcosa che accende/spegne davvero i dispositivi (per esempio MQTT, nodi Shelly, chiamate di servizio Home Assistant, ecc.).
 
-Nota: il controller cambia un carico alla volta. Lo shedding avanza di un carico a ogni `shed` ricevuto (quindi dipende dal <i>Poll</i> della telemetria); il ripristino avanza di un carico solo se e' trascorso il <b>Ritardo unshed (minuti)</b> dall'ultimo `shed` o dall'ultimo cambio di stage.
+Nota: il controller cambia un carico alla volta. Lo shedding avanza di un carico a ogni `shed` ricevuto (quindi dipende dal <i>Poll</i> della telemetria); dopo un `unshed` il ripristino avanza da solo di un carico a ogni scadenza del <b>Ritardo unshed (minuti)</b> (contato dall'ultimo `shed` o dall'ultimo ripristino), senza bisogno di altri messaggi; un nuovo `shed` lo interrompe.
 
-- **Ritardo unshed (minuti)**: tempo minimo tra un ripristino e il successivo (e dalla fine dell'allarme). Con `0` lo stage scende a ogni messaggio `unshed`.
+- **Ritardo unshed (minuti)**: intervallo tra un ripristino e il successivo (e dalla fine dell'allarme), gestito da un timer interno. Con `0` lo stage scende a ogni messaggio `unshed`.
 
 Come configurare i carichi:
 

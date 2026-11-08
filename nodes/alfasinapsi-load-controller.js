@@ -179,21 +179,68 @@ module.exports = function (RED) {
         }
       }
 
-      function updateStageFromSignal(signal) {
-        const maxStage = node._loads.length;
-        const prevStage = stage;
-        if (signal === "shed") stage = clampInt(stage + 1, 0, maxStage);
-        if (signal === "unshed" && nowMs() - lastStageChangeMs >= unshedDelayMs) {
-          stage = clampInt(stage - 1, 0, maxStage);
-        }
-        // Il ritardo unshed parte dall'ultimo shed ricevuto (allarme ancora attivo) o dall'ultimo cambio di stage.
-        if (signal === "shed" || stage !== prevStage) lastStageChangeMs = nowMs();
+      // true quando l'ultimo segnale ricevuto e' "unshed": il ripristino prosegue da solo, un carico a ogni scadenza del ritardo.
+      let unshedActive = false;
+      let unshedTimer = null;
 
-        const text = `stage ${stage}/${maxStage}`;
+      function clearUnshedTimer() {
+        if (unshedTimer) clearTimeout(unshedTimer);
+        unshedTimer = null;
+      }
+
+      function refreshStatus() {
+        const text = `stage ${stage}/${node._loads.length}`;
         if (currentStatus?.connecting) safeStatus({ fill: "yellow", shape: "ring", text });
         else if (currentStatus?.connected) safeStatus({ fill: stage > 0 ? "yellow" : "green", shape: "dot", text });
         else safeStatus({ fill: stage > 0 ? "yellow" : "red", shape: "ring", text });
+      }
 
+      function unshedStep() {
+        if (stage <= 0) return false;
+        stage = clampInt(stage - 1, 0, node._loads.length);
+        lastStageChangeMs = nowMs();
+        return true;
+      }
+
+      // Programma il prossimo ripristino alla scadenza del ritardo (calcolato dall'ultimo shed / cambio di stage).
+      function scheduleUnshed() {
+        clearUnshedTimer();
+        if (!unshedActive || stage <= 0 || unshedDelayMs <= 0) return;
+        const waitMs = Math.max(0, lastStageChangeMs + unshedDelayMs - nowMs());
+        unshedTimer = setTimeout(() => {
+          unshedTimer = null;
+          try {
+            if (!unshedActive) return;
+            if (unshedStep()) {
+              refreshStatus();
+              applyStage();
+            }
+            scheduleUnshed();
+          } catch (err) {
+            reportError(err, "unshed timer");
+          }
+        }, waitMs);
+      }
+
+      function updateStageFromSignal(signal) {
+        const maxStage = node._loads.length;
+        if (signal === "shed") {
+          unshedActive = false;
+          clearUnshedTimer();
+          stage = clampInt(stage + 1, 0, maxStage);
+          // Il ritardo unshed riparte dall'ultimo shed ricevuto (allarme ancora attivo).
+          lastStageChangeMs = nowMs();
+        } else if (signal === "unshed") {
+          unshedActive = true;
+          // Con ritardo 0 lo stage scende a ogni messaggio unshed; altrimenti solo se il ritardo e' gia' trascorso,
+          // e i successivi ripristini avvengono dal timer interno (senza attendere altri messaggi).
+          let stepped = false;
+          if (unshedDelayMs <= 0 || nowMs() - lastStageChangeMs >= unshedDelayMs) stepped = unshedStep();
+          // Non riavviare il timer se e' gia' in corso: messaggi unshed ripetuti non devono ritardare il ripristino.
+          if (stepped || !unshedTimer) scheduleUnshed();
+        }
+
+        refreshStatus();
         applyStage();
       }
 
@@ -248,6 +295,8 @@ module.exports = function (RED) {
       node.on("close", (removed, done) => {
         if (reapplyTimer) clearTimeout(reapplyTimer);
         reapplyTimer = null;
+        unshedActive = false;
+        clearUnshedTimer();
         try {
           done();
         } catch (_) {

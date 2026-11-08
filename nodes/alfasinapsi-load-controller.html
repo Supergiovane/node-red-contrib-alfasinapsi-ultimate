@@ -135,7 +135,7 @@
 	      <p>
 	        Nota: ogni <code>shed</code> aumenta lo stage di 1, quindi la velocita dello shedding dipende dalla frequenza dei messaggi in ingresso
 	        (per esempio dal <i>Poll (ms)</i> del nodo <code>alfasinapsi-telemetry</code>).
-	        Ogni <code>unshed</code> riduce lo stage di 1, ma solo se e' trascorso almeno il <i>Ritardo unshed (minuti)</i> dall'ultimo <code>shed</code> o dall'ultimo cambio di stage.
+	        Dopo un <code>unshed</code> il nodo ripristina un carico a ogni scadenza del <i>Ritardo unshed (minuti)</i> (contato dall'ultimo <code>shed</code> o dall'ultimo ripristino), con un timer interno: non serve che arrivino altri messaggi. Un nuovo <code>shed</code> interrompe il ripristino.
 		      </p>
 		    </dd>
 		  </dl>
@@ -173,7 +173,7 @@
     <dt>Ritardo unshed (minuti) <span class="property-type">number</span></dt>
     <dd>
       Tempo minimo tra l'ultimo <code>shed</code> (o l'ultimo cambio di stage) e il ripristino del carico successivo.
-      I carichi vengono quindi riaccesi uno alla volta, uno ogni N minuti dalla fine dell'allarme.
+      I carichi vengono quindi riaccesi uno alla volta, uno ogni N minuti dalla fine dell'allarme, anche se il segnale <code>unshed</code> arriva una sola volta.
       Con <code>0</code> lo stage scende di 1 a ogni messaggio <code>unshed</code> ricevuto (es. a ogni <i>Poll</i> in modalita Telemetria).
     </dd>
   </dl>

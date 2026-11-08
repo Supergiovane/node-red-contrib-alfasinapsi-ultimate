@@ -116,7 +116,7 @@
 	  <h3>Output: KNX Load Control PIN</h3>
 	  <p>
 	    In caso di allarme reale, invia <code>shed</code> a ogni ciclo di <b>Poll (ms)</b> (continuamente).
-	    Se non c'e allarme, invia <code>unshed</code> a intervalli di <b>Intervallo unshed (min)</b>, iniziando subito all'avvio del nodo.
+	    Se non c'e allarme, invia <code>unshed</code> a intervalli di <b>Intervallo unshed (min)</b>: subito all'avvio del nodo, ma dopo un allarme il primo <code>unshed</code> arriva solo un intervallo intero dopo l'ultimo <code>shed</code>.
 	    In questa modalita, l'opzione <i>Solo se cambia</i> viene ignorata.
 	  </p>
 	  <dl class="message-properties">
@@ -153,7 +153,7 @@
 		      Nota: se colleghi l'output al nodo <code>alfasinapsi-load-controller</code>, un <i>Poll</i> piu basso rende il controller piu reattivo.
 		    </dd>
 	    <dt>Intervallo unshed (min) <span class="property-type">number</span></dt>
-	    <dd>Disponibile solo in <code>KNX Load Control PIN</code>. Quando non c'e allarme, invia <code>unshed</code> periodicamente ogni N minuti. Se impostato a 0, usa la frequenza di <code>Poll (ms)</code>.</dd>
+	    <dd>Disponibile solo in <code>KNX Load Control PIN</code>. Quando non c'e allarme, invia <code>unshed</code> periodicamente ogni N minuti. Dopo un allarme, il primo <code>unshed</code> viene inviato N minuti dopo l'ultimo <code>shed</code>. Se impostato a 0, usa la frequenza di <code>Poll (ms)</code>.</dd>
 	    <dt>PIN Telemetria <span class="property-type">singleTelemetryPin | sixValuePins</span></dt>
 	    <dd>
 	      Se <code>singleTelemetryPin</code>, il nodo usa un solo output con tutta la telemetria.
