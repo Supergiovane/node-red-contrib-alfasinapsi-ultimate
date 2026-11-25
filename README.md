@@ -77,7 +77,7 @@ Impostazioni fisse (non modificabili):
 
 ### 2) `alfasinapsi-telemetry`
 
-Questo nodo legge le misure ogni _Poll (ms)_ e invia messaggi dal suo unico output.
+Questo nodo legge le misure ogni _Poll (ms)_ e invia messaggi dalle sue uscite (1 oppure 7, in base alla modalita scelta).
 
 In piu:
 
@@ -88,6 +88,23 @@ Puoi scegliere cosa emettere dall'output con <i>Compatibilita</i>:
 
 - <b>Telemetria</b> (consigliato): misure semplificate + dettagli tecnici.
 - <b>KNX Load Control PIN</b>: messaggi `shed/unshed` (utile se lo colleghi a un nodo KNX Load Control), con intervallo dedicato per `unshed`.
+
+In modalita <b>Telemetria</b> puoi scegliere anche <i>PIN Telemetria</i>:
+
+- <b>PIN unico telemetria</b>: 1 uscita con il messaggio completo (`msg.payload` + `msg.insight`) e i messaggi di stato connessione.
+- <b>7 PIN valori principali</b>: 7 uscite, ognuna con un solo valore in `msg.payload`:
+
+| PIN | Valore | `msg.topic` | Tipo / unita |
+| --- | --- | --- | --- |
+| 1 | Consumo (casa) | `alfasinapsi/telemetry/pin/consumptionKW` | number, kW |
+| 2 | Produzione | `alfasinapsi/telemetry/pin/productionkW` | number, kW |
+| 3 | % autoconsumo istantaneo | `alfasinapsi/telemetry/pin/selfConsumption` | number, 0..100 |
+| 4 | % vendita istantanea al gestore | `alfasinapsi/telemetry/pin/gridSale` | number, 0..100 |
+| 5 | % acquisto istantaneo dal gestore | `alfasinapsi/telemetry/pin/gridPurchase` | number, 0..100 |
+| 6 | Avviso distacco | `alfasinapsi/telemetry/pin/cutoff.hasWarning` | boolean |
+| 7 | Surplus istantaneo | `alfasinapsi/telemetry/pin/surplusW` | number, W |
+
+Ogni PIN emette solo se il valore e' valido (numero finito o boolean). In questa modalita non vengono inviati i messaggi di stato connessione. Nei flow creati con la versione a 6 PIN, il 7° PIN compare dopo aver aperto e salvato il nodo nell'editor (i primi 6 collegamenti restano invariati).
 
 Uso tipico:
 
@@ -127,7 +144,7 @@ Termini usati nel payload:
 - **Export**: stai vendendo energia alla rete.
 - **Production**: stai producendo energia (es. fotovoltaico).
 - **Consumo (casa)**: consumo istantaneo totale della casa (`payload.power.consumptionKW`).
-- **Surplus**: potenza in eccesso disponibile; in questo pacchetto coincide con **Export** (`payload.power.surplusKW`).
+- **Surplus**: potenza in eccesso disponibile; in questo pacchetto coincide con **Export** (`payload.power.surplusKW`). In modalita 7 PIN e' disponibile anche sul 7° PIN in watt (`surplusW`).
 - **Percentuali utili** (`payload.utilityPercent`, 0..100):
   - `selfConsumption`: quanta parte della produzione stai usando in casa
   - `gridSale`: quanta parte della produzione stai vendendo
@@ -138,7 +155,7 @@ Termini usati nel payload:
 Questo nodo <b>non fa polling</b>. Riceve in ingresso i messaggi del nodo <code>alfasinapsi-telemetry</code> e decide se spegnere o riaccendere i carichi, uno alla volta, seguendo l'ordine della lista. Formati accettati:
 
 - **Telemetria** (PIN singolo): `msg.payload.cutoff.hasWarning` (`true` = shed, `false` = unshed)
-- **PIN `cutoff.hasWarning`** (modalita 6 PIN) o qualsiasi boolean: `msg.payload` `true` = shed, `false` = unshed
+- **PIN `cutoff.hasWarning`** (modalita 7 PIN) o qualsiasi boolean: `msg.payload` `true` = shed, `false` = unshed
 - **KNX Load Control PIN**: `msg.payload` (o `msg.shedding`) = `"shed"` / `"unshed"`
 
 Invia:

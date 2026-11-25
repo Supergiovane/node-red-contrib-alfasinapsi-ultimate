@@ -13,7 +13,9 @@ module.exports = function (RED) {
   const TELEMETRY_PINS_MODE_SINGLE = "singleTelemetryPin";
   const TELEMETRY_PINS_MODE_VALUES = "sixValuePins";
   const OUTPUT_COUNT_SINGLE = 1;
-  const OUTPUT_COUNT_VALUES = 6;
+  const OUTPUT_COUNT_VALUES = 7;
+  // Nodi salvati prima dell'aggiunta del PIN surplus hanno 6 uscite: servono per riconoscere la modalita valori.
+  const LEGACY_OUTPUT_COUNT_VALUES = 6;
 
   function wToKw(valueW) {
     return Number(valueW ?? 0) / 1000;
@@ -165,7 +167,7 @@ module.exports = function (RED) {
       node.sendOnChange = !!config.sendOnChange;
       node.compatibility = config.compatibility || COMPATIBILITY_TELEMETRY;
       node.telemetryPinsMode = config.telemetryPinsMode
-        || ((Number(config.outputs) >= OUTPUT_COUNT_VALUES) ? TELEMETRY_PINS_MODE_VALUES : TELEMETRY_PINS_MODE_SINGLE);
+        || ((Number(config.outputs) >= LEGACY_OUTPUT_COUNT_VALUES) ? TELEMETRY_PINS_MODE_VALUES : TELEMETRY_PINS_MODE_SINGLE);
       node.unshedDelayMin = Math.max(0, Number(config.unshedDelayMin || 0));
       node.pollInterval = Math.max(500, Number(config.pollInterval || 10000));
 
@@ -336,6 +338,11 @@ module.exports = function (RED) {
               topic: "alfasinapsi/telemetry/pin/cutoff.hasWarning",
               value: payload?.cutoff?.hasWarning,
               validator: isBoolean
+            },
+            {
+              topic: "alfasinapsi/telemetry/pin/surplusW",
+              value: insight?.power?.surplusW,
+              validator: isFiniteNumber
             }
           ];
 

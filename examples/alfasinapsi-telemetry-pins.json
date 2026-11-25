@@ -10,7 +10,7 @@
     "id": "9a6b1ceef4a45618",
     "type": "comment",
     "z": "6a62f5f7dfb1974f",
-    "name": "Modalita 6 PIN valori principali: collega il tuo dispositivo Sinapsi e osserva i 6 output.",
+    "name": "Modalita 7 PIN valori principali: collega il tuo dispositivo Sinapsi e osserva i 7 output.",
     "info": "",
     "x": 390,
     "y": 80,
@@ -46,8 +46,12 @@
       ],
       [
         "3f66e2cb3283fd31"
+      ],
+      [
+        "b7c1e2a94d5f3a10"
       ]
-    ]
+    ],
+    "outputs": 7
   },
   {
     "id": "f1cdd4128b3e82b9",
@@ -149,6 +153,23 @@
     "statusType": "auto",
     "x": 530,
     "y": 320,
+    "wires": []
+  },
+  {
+    "id": "b7c1e2a94d5f3a10",
+    "type": "debug",
+    "z": "6a62f5f7dfb1974f",
+    "name": "Uscita 7 - Surplus istantaneo (W)",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 550,
+    "y": 350,
     "wires": []
   },
   {

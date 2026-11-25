@@ -3,6 +3,12 @@
 <br/>
 
 <p>
+<b>Version 1.1.11</b> - November 2026<br/>
+- NEW: telemetry pin mode (formerly 6 PIN) now has a 7th output with the instantaneous surplus in W (<code>alfasinapsi/telemetry/pin/surplusW</code>). The new pin is appended last, so existing wiring of the first 6 pins is unchanged; existing nodes show the 7th pin after being opened and saved in the editor.<br/>
+- DOCS: telemetry node help, README and pins example updated with the 7 pins list (topic, type and unit of each pin).<br/>
+</p>
+
+<p>
 <b>Version 1.1.10</b> - November 2026<br/>
 - FIX: telemetry <code>KNX Load Control PIN</code> mode sent <code>unshed</code> at the very next poll after the alarm ended, ignoring <code>Intervallo unshed (minuti)</code>, so the downstream load was reconnected right after being disconnected (flapping). Now the first <code>unshed</code> is sent one full interval after the last <code>shed</code>, then one every interval.<br/>
 - FIX: load-controller now restores one load at every <code>Ritardo unshed (minuti)</code> expiry with an internal timer, after an <code>unshed</code> signal. Previously a load was restored only when a new <code>unshed</code> message arrived after the delay, so with rare messages (e.g. send on change) the restore stalled.<br/>

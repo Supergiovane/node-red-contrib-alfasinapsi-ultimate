@@ -35,7 +35,7 @@
     <label for="node-input-telemetryPinsMode"><i class="fa fa-random"></i> PIN Telemetria</label>
     <select id="node-input-telemetryPinsMode">
       <option value="singleTelemetryPin">PIN unico telemetria</option>
-      <option value="sixValuePins">6 PIN valori principali</option>
+      <option value="sixValuePins">7 PIN valori principali</option>
     </select>
   </div>
 </script>
@@ -54,12 +54,24 @@
 	  <h3>Uscite</h3>
 	  <ul>
 	    <li><b>Compatibilita = Telemetria</b> + <b>PIN unico telemetria</b>: 1 uscita con il messaggio completo (<code>msg.payload</code> + <code>msg.insight</code>) e messaggi di stato connessione.</li>
-	    <li><b>Compatibilita = Telemetria</b> + <b>6 PIN valori principali</b>: 6 uscite dedicate ai valori principali:
-	      <code>consumptionKW</code>, <code>productionkW</code>, <code>selfConsumption</code>, <code>gridSale</code>, <code>gridPurchase</code>, <code>cutoff.hasWarning</code>.
+	    <li><b>Compatibilita = Telemetria</b> + <b>7 PIN valori principali</b>: 7 uscite dedicate ai valori principali:
+	      <code>consumptionKW</code>, <code>productionkW</code>, <code>selfConsumption</code>, <code>gridSale</code>, <code>gridPurchase</code>, <code>cutoff.hasWarning</code>, <code>surplusW</code> (surplus istantaneo in W).
 	    </li>
 	    <li><b>Compatibilita = KNX Load Control PIN</b>: 1 uscita con <code>shed</code>/<code>unshed</code>.</li>
 	  </ul>
-	  <p>In modalita <b>6 PIN valori principali</b>, le uscite numeriche emettono solo se il valore e' numerico; l'uscita <code>cutoff.hasWarning</code> emette solo se booleana.</p>
+	  <p>In modalita <b>7 PIN valori principali</b>, le uscite numeriche emettono solo se il valore e' numerico; l'uscita <code>cutoff.hasWarning</code> emette solo se booleana.</p>
+
+	  <h3>Output: 7 PIN valori principali</h3>
+	  <p>Ogni uscita invia un messaggio con il solo valore in <code>msg.payload</code>, il <code>msg.topic</code> indicato e <code>msg.status</code>. In questa modalita non vengono inviati i messaggi di stato connessione.</p>
+	  <ol>
+	    <li><b>Consumo (casa)</b>: <code>alfasinapsi/telemetry/pin/consumptionKW</code>, number in kW</li>
+	    <li><b>Produzione</b>: <code>alfasinapsi/telemetry/pin/productionkW</code>, number in kW</li>
+	    <li><b>% autoconsumo istantaneo</b>: <code>alfasinapsi/telemetry/pin/selfConsumption</code>, number 0..100</li>
+	    <li><b>% vendita istantanea al gestore</b>: <code>alfasinapsi/telemetry/pin/gridSale</code>, number 0..100</li>
+	    <li><b>% acquisto istantaneo dal gestore</b>: <code>alfasinapsi/telemetry/pin/gridPurchase</code>, number 0..100</li>
+	    <li><b>Avviso distacco</b>: <code>alfasinapsi/telemetry/pin/cutoff.hasWarning</code>, boolean</li>
+	    <li><b>Surplus istantaneo (W)</b>: <code>alfasinapsi/telemetry/pin/surplusW</code>, number in W (coincide con l'export verso la rete)</li>
+	  </ol>
 
   <h3>msg.status (stato connessione)</h3>
   <p>I messaggi emessi includono <code>msg.status</code>, con:</p>
@@ -147,7 +159,7 @@
 	    <dt>Compatibilita <span class="property-type">telemetry | knxLoadControlPin</span></dt>
 	    <dd>
 	      <ul>
-	        <li><code>Telemetria</code>: emette telemetria completa o 6 PIN, in base alla modalita selezionata (rispetta <i>Poll</i> e <i>Solo se cambia</i>).</li>
+	        <li><code>Telemetria</code>: emette telemetria completa o 7 PIN, in base alla modalita selezionata (rispetta <i>Poll</i> e <i>Solo se cambia</i>).</li>
 	        <li><code>KNX Load Control PIN</code>: emette <code>shed</code> a ogni <i>Poll</i> quando c'e allarme, e <code>unshed</code> a intervalli con <i>Intervallo unshed (min)</i> quando non c'e allarme.</li>
 	      </ul>
 		      Nota: se colleghi l'output al nodo <code>alfasinapsi-load-controller</code>, un <i>Poll</i> piu basso rende il controller piu reattivo.
@@ -157,7 +169,7 @@
 	    <dt>PIN Telemetria <span class="property-type">singleTelemetryPin | sixValuePins</span></dt>
 	    <dd>
 	      Se <code>singleTelemetryPin</code>, il nodo usa un solo output con tutta la telemetria.
-	      Se <code>sixValuePins</code>, il nodo usa 6 output con i valori principali.
+	      Se <code>sixValuePins</code>, il nodo usa 7 output con i valori principali (il nome del valore resta <code>sixValuePins</code> per compatibilita con i flow esistenti).
 	    </dd>
 		  </dl>
 
@@ -174,7 +186,7 @@
       const compatibility = config.compatibility || COMPATIBILITY_TELEMETRY;
       if (compatibility === COMPATIBILITY_KNX_LOAD_CONTROL_PIN) return 1;
       const telemetryPinsMode = config.telemetryPinsMode || TELEMETRY_PINS_MODE_SINGLE;
-      return telemetryPinsMode === TELEMETRY_PINS_MODE_VALUES ? 6 : 1;
+      return telemetryPinsMode === TELEMETRY_PINS_MODE_VALUES ? 7 : 1;
     }
 
     function resolveOutputLabels(config) {
@@ -188,7 +200,8 @@
         "% autoconsumo istantaneo",
         "% vendita istantanea al gestore",
         "% acquisto istantaneo dal gestore",
-        "Avviso distacco"
+        "Avviso distacco",
+        "Surplus istantaneo (W)"
       ];
     }
 
