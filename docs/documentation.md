@@ -1,0 +1,199 @@
+<p align="center">
+  <img src="../img/logo-supervibe.png" alt="AlfaSinapsi Ultimate - Max Supervibe" width="380" />
+</p>
+
+## Il nodo per connettere Alfa di Sinapsi a Node-RED
+
+Nodi Node-RED per collegare **Sinapsi Alfa** via WiFi e creare un **controller carichi**.
+
+<br/>
+<br/>
+<br/>
+
+[![NPM version][npm-version-image]][npm-url]
+[![Node.js version][node-version-image]][npm-url]
+[![Node-RED Flow Library][flows-image]][flows-url]
+[![Docs][docs-image]][docs-url]
+[![NPM downloads per month][npm-downloads-month-image]][npm-url]
+[![NPM downloads total][npm-downloads-total-image]][npm-url]
+[![MIT License][license-image]][license-url]
+[![JavaScript Style Guide][standard-image]][standard-url]
+[![Youtube][youtube-image]][youtube-url]
+[![Website](https://img.shields.io/badge/Website-maxsupervibe.com-0d4c70)](https://www.maxsupervibe.com)
+
+<p align="center">
+  <img src="../img/readmemain.png" alt="AlfaSinapsi Ultimate for Node-RED — Max Supervibe" width="70%">
+</p>
+
+## Video YouTube
+
+[Guarda il video](https://youtu.be/R-7PZv3iJ2s)
+
+<p align="center">
+  <a href="https://youtu.be/R-7PZv3iJ2s" target="_blank" rel="noopener noreferrer">
+    <img src="../assets/main.png" width="720" alt="Video: AlfaSinapsi Ultimate - Load controller" />
+  </a>
+</p>
+
+## Requisiti
+
+- Un dispositivo Sinapsi Alfa raggiungibile sulla tua rete WiFi
+
+## CHANGELOG
+
+[CHANGELOG](../changelog.md)
+
+## Avvio rapido (passo-passo)
+
+1. Apri l'editor di Node-RED.
+2. Nella palette a sinistra, cerca "alfasinapsi".
+3. Trascina **alfasinapsi telemetria** nel flow.
+4. Fai doppio click e premi la **matita** vicino a _Dispositivo_ per creare una nuova configurazione **alfasinapsi device**.
+5. Compila:
+   - **Indirizzo IP Sinapsi**: l'indirizzo IP del tuo Sinapsi Alfa (esempio `192.168.1.186`)
+6. Premi **Add**, poi **Done**.
+7. Collega l'uscita del nodo telemetria a un nodo **Debug** e premi **Deploy**.
+
+Dovresti vedere i messaggi nella sidebar di debug con valori di potenza ed energia.
+
+<p align="center">
+  <img src="../assets/picture.jpg" width="520" alt="Esempio flow" />
+</p>
+
+Esempio `examples/alfasinapsi-load-controller.json`.
+
+## Nodi
+
+### 1) `alfasinapsi-device` (nodo di configurazione)
+
+Questo nodo non appare nel flow come un nodo normale. E' una configurazione condivisa usata dagli altri nodi.
+
+Campo principale:
+
+- **Indirizzo IP Sinapsi**: indirizzo IP o hostname del dispositivo Sinapsi Alfa
+
+Impostazioni fisse (non modificabili):
+
+- Il profilo di connessione e' fisso per stabilita (serve solo l'indirizzo IP).
+
+### 2) `alfasinapsi-telemetry`
+
+Questo nodo legge le misure ogni _Poll (ms)_ e invia messaggi dalle sue uscite (1 oppure 7, in base alla modalita scelta).
+
+In piu:
+
+- Ogni messaggio include `msg.status` (stato connessione corrente).
+- Quando cambia lo stato di connessione, emette anche un messaggio dedicato con `msg.topic = "alfasinapsi/telemetry/status"`.
+
+Puoi scegliere cosa emettere dall'output con <i>Compatibilita</i>:
+
+- <b>Telemetria</b> (consigliato): misure semplificate + dettagli tecnici.
+- <b>KNX Load Control PIN</b>: messaggi `shed/unshed` (utile se lo colleghi a un nodo KNX Load Control), con intervallo dedicato per `unshed`.
+
+In modalita <b>Telemetria</b> puoi scegliere anche <i>PIN Telemetria</i>:
+
+- <b>PIN unico telemetria</b>: 1 uscita con il messaggio completo (`msg.payload` + `msg.insight`) e i messaggi di stato connessione.
+- <b>7 PIN valori principali</b>: 7 uscite, ognuna con un solo valore in `msg.payload`:
+
+| PIN | Valore | `msg.topic` | Tipo / unita |
+| --- | --- | --- | --- |
+| 1 | Consumo (casa) | `alfasinapsi/telemetry/pin/consumptionKW` | number, kW |
+| 2 | Produzione | `alfasinapsi/telemetry/pin/productionkW` | number, kW |
+| 3 | % autoconsumo istantaneo | `alfasinapsi/telemetry/pin/selfConsumption` | number, 0..100 |
+| 4 | % vendita istantanea al gestore | `alfasinapsi/telemetry/pin/gridSale` | number, 0..100 |
+| 5 | % acquisto istantaneo dal gestore | `alfasinapsi/telemetry/pin/gridPurchase` | number, 0..100 |
+| 6 | Avviso distacco | `alfasinapsi/telemetry/pin/cutoff.hasWarning` | boolean |
+| 7 | Surplus istantaneo | `alfasinapsi/telemetry/pin/surplusW` | number, W |
+
+Ogni PIN emette solo se il valore e' valido (numero finito o boolean). In questa modalita non vengono inviati i messaggi di stato connessione. Nei flow creati con la versione a 6 PIN, il 7° PIN compare dopo aver aperto e salvato il nodo nell'editor (i primi 6 collegamenti restano invariati).
+
+Uso tipico:
+
+- Collegalo a un nodo **Debug** per vedere i valori.
+- Collegalo a una **Dashboard** (o alla tua logica) per visualizzare o usare potenza/energia.
+
+Struttura del messaggio (modalita <b>Telemetria</b>):
+
+- `msg.payload` - campi semplificati per l'uso quotidiano:
+  - `payload.power.importkW` / `exportkW` / `productionkW` / `consumptionKW` / `surplusKW`
+  - `payload.utilityPercent.selfConsumption` / `gridSale` / `gridPurchase`
+  - `payload.energy.importTotalkWh` / `exportTotalkWh` / `productionTotalkWh`
+  - `payload.tariffBand`
+  - `payload.cutoff.hasWarning` / `payload.cutoff.remainingSeconds` / `payload.cutoff.atIso`
+  - `payload.messageAtIso` / `payload.meterReadAtIso`
+- `msg.insight` - dettagli tecnici:
+  - `insight.telemetry`: telemetria completa decodificata (include campi extra come fasce di ieri, medie di quarto d'ora, ecc.)
+  - `insight.power`: valori comodi in watt (`consumptionW`, `surplusW`)
+- `msg.status` - stato connessione:
+  - `status.connected` (boolean)
+  - `status.connecting` (boolean)
+  - `status.error` (string|null)
+  - `status.ts` (number, epoch ms)
+
+Struttura del messaggio (modalita <b>KNX Load Control PIN</b>):
+
+- Se c'e un avviso distacco imminente: `msg.payload = "shed"` a ogni `Poll (ms)` (continuamente)
+- Se non c'e allarme: `msg.payload = "unshed"` periodicamente ogni `Intervallo unshed (min)`, a partire dall'avvio del nodo; dopo un allarme il primo `unshed` arriva solo `Intervallo unshed (min)` dopo l'ultimo `shed` (con `0` usa la frequenza di `Poll (ms)`)
+- `msg.shedding` con lo stesso valore
+- In modalita KNX, `Solo se cambia` e' ignorato
+
+## Terminologia (import/export/surplus)
+
+Termini usati nel payload:
+
+- **Import**: stai acquistando energia dalla rete.
+- **Export**: stai vendendo energia alla rete.
+- **Production**: stai producendo energia (es. fotovoltaico).
+- **Consumo (casa)**: consumo istantaneo totale della casa (`payload.power.consumptionKW`).
+- **Surplus**: potenza in eccesso disponibile; in questo pacchetto coincide con **Export** (`payload.power.surplusKW`). In modalita 7 PIN e' disponibile anche sul 7° PIN in watt (`surplusW`).
+- **Percentuali utili** (`payload.utilityPercent`, 0..100):
+  - `selfConsumption`: quanta parte della produzione stai usando in casa
+  - `gridSale`: quanta parte della produzione stai vendendo
+  - `gridPurchase`: quanta parte del consumo arriva dalla rete
+
+### 3) `alfasinapsi-load-controller`
+
+Questo nodo <b>non fa polling</b>. Riceve in ingresso i messaggi del nodo <code>alfasinapsi-telemetry</code> e decide se spegnere o riaccendere i carichi, uno alla volta, seguendo l'ordine della lista. Formati accettati:
+
+- **Telemetria** (PIN singolo): `msg.payload.cutoff.hasWarning` (`true` = shed, `false` = unshed)
+- **PIN `cutoff.hasWarning`** (modalita 7 PIN) o qualsiasi boolean: `msg.payload` `true` = shed, `false` = unshed
+- **KNX Load Control PIN**: `msg.payload` (o `msg.shedding`) = `"shed"` / `"unshed"`
+
+Invia:
+
+- Una uscita per ogni carico configurato, che emette <code>true/false</code> (unshed/shed) con <code>msg.topic</code> uguale al nome del carico.
+
+Importante: questo nodo **non comanda i relè da solo**. Devi collegare ogni uscita carico a qualcosa che accende/spegne davvero i dispositivi (per esempio MQTT, nodi Shelly, chiamate di servizio Home Assistant, ecc.).
+
+Nota: il controller cambia un carico alla volta. Lo shedding avanza di un carico a ogni `shed` ricevuto (quindi dipende dal <i>Poll</i> della telemetria); dopo un `unshed` il ripristino avanza da solo di un carico a ogni scadenza del <b>Ritardo unshed (minuti)</b> (contato dall'ultimo `shed` o dall'ultimo ripristino), senza bisogno di altri messaggi; un nuovo `shed` lo interrompe.
+
+- **Ritardo unshed (minuti)**: intervallo tra un ripristino e il successivo (e dalla fine dell'allarme), gestito da un timer interno. Con `0` lo stage scende a ogni messaggio `unshed`.
+
+Come configurare i carichi:
+
+- **Nome**: usato come etichetta di uscita e come `msg.topic` in output
+- **Ordine in lista**: la posizione nella lista determina la priorita (dall'alto verso il basso)
+- **Min acceso (s)**: tempo minimo in cui il carico resta acceso prima di poter essere spento
+- **Min spento (s)**: tempo minimo in cui il carico resta spento prima di poter essere acceso
+
+Se un timer Min acceso/spento blocca una commutazione, il controller la esegue automaticamente appena il timer scade.
+
+## Problemi di connessione? Ricorda
+
+- Sinapsi Alfa in genere accetta una sola connessione alla volta: evita di collegare piu sistemi contemporaneamente.
+
+[npm-version-image]: https://img.shields.io/npm/v/node-red-contrib-alfasinapsi-ultimate.svg
+[npm-url]: https://www.npmjs.com/package/node-red-contrib-alfasinapsi-ultimate
+[node-version-image]: https://img.shields.io/node/v/node-red-contrib-alfasinapsi-ultimate.svg
+[flows-image]: https://img.shields.io/badge/Node--RED-Flow%20Library-red
+[flows-url]: https://flows.nodered.org/node/node-red-contrib-alfasinapsi-ultimate
+[docs-image]: https://img.shields.io/badge/docs-documents-blue
+[docs-url]: ../documents/
+[npm-downloads-month-image]: https://img.shields.io/npm/dm/node-red-contrib-alfasinapsi-ultimate.svg
+[npm-downloads-total-image]: https://img.shields.io/npm/dt/node-red-contrib-alfasinapsi-ultimate.svg
+[license-image]: https://img.shields.io/badge/license-MIT-green.svg
+[license-url]: https://opensource.org/licenses/MIT
+[standard-image]: https://img.shields.io/badge/code%20style-standard-brightgreen.svg
+[standard-url]: https://standardjs.com
+[youtube-image]: https://img.shields.io/badge/YouTube-Subscribe-red?logo=youtube&logoColor=white
+[youtube-url]: https://www.youtube.com/@maxsupervibe
