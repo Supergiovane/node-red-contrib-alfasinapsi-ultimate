@@ -3,6 +3,11 @@
 <br/>
 
 <p>
+<b>Unreleased</b><br/>
+- NEW: integrazione con Cerebrum Ultimate. Il nodo telemetria pubblica potenze, energie, fascia oraria e preavviso di distacco a Cerebrum Ultimate, in sola lettura, quando Cerebrum è installato nello stesso Node-RED. I client MCP li possono leggere tramite il server MCP di Cerebrum. Vedi la <a href="https://www.maxsupervibe.com/docs/cerebrum-ultimate/">documentazione di Cerebrum Ultimate</a>.<br/>
+</p>
+
+<p>
 <b>Version 1.1.11</b> - November 2026<br/>
 - NEW: telemetry pin mode (formerly 6 PIN) now has a 7th output with the instantaneous surplus in W (<code>alfasinapsi/telemetry/pin/surplusW</code>). The new pin is appended last, so existing wiring of the first 6 pins is unchanged; existing nodes show the 7th pin after being opened and saved in the editor.<br/>
 - DOCS: telemetry node help, README and pins example updated with the 7 pins list (topic, type and unit of each pin).<br/>

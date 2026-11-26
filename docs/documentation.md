@@ -197,3 +197,7 @@ Se un timer Min acceso/spento blocca una commutazione, il controller la esegue a
 [standard-url]: https://standardjs.com
 [youtube-image]: https://img.shields.io/badge/YouTube-Subscribe-red?logo=youtube&logoColor=white
 [youtube-url]: https://www.youtube.com/@maxsupervibe
+
+## Cerebrum Ultimate
+
+Se nello stesso Node-RED è installato **Cerebrum Ultimate**, ogni nodo telemetria gli viene pubblicato automaticamente, in sola lettura: potenza prelevata, immessa, prodotta e consumata (kW, al massimo un aggiornamento al minuto per valore), energie totali (kWh), fascia oraria e preavviso di distacco del contatore, segnalato subito. Cerebrum li può usare in chat, nello storico e come trigger delle routine JavaScript, e i client MCP come Claude li possono leggere tramite il server MCP di Cerebrum. Non c’è nulla da configurare e tramite questo collegamento Cerebrum non può accendere, spegnere o modificare nulla. Senza Cerebrum non cambia niente. Vedi la [documentazione di Cerebrum Ultimate](https://www.maxsupervibe.com/docs/cerebrum-ultimate/).

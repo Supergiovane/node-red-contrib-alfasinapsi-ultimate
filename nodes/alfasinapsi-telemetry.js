@@ -1,6 +1,12 @@
 "use strict";
 
 let readTelemetry;
+let createAlfaSinapsiCerebrumIntegration = null;
+try {
+  ({ createAlfaSinapsiCerebrumIntegration } = require("./lib/alfasinapsi-cerebrum"));
+} catch (_) {
+  createAlfaSinapsiCerebrumIntegration = null;
+}
 try {
   ({ readTelemetry } = require("./lib/alfasinapsi-telemetry"));
 } catch (_) {
@@ -185,6 +191,13 @@ module.exports = function (RED) {
       let lastStatusSignature = null;
       let bootstrapDone = false;
       let resolveTimer = null;
+      // Pubblicazione in sola lettura verso Cerebrum Ultimate (facoltativa).
+      let cerebrum = null;
+      try {
+        if (createAlfaSinapsiCerebrumIntegration) cerebrum = createAlfaSinapsiCerebrumIntegration({ nodeId: node.id, title: config.name || "AlfaSinapsi" });
+      } catch (_) {
+        cerebrum = null;
+      }
 
       const normaliseStatus = (s) => {
         const connected = !!s?.connected;
@@ -200,6 +213,11 @@ module.exports = function (RED) {
           error: nextStatus?.error ? String(nextStatus.error).slice(0, 64) : null
         });
         currentStatus = nextStatus;
+        try {
+          if (cerebrum) cerebrum.setConnected(!!nextStatus?.connected);
+        } catch (_) {
+          // ignore
+        }
         if (signature === lastStatusSignature) return;
         lastStatusSignature = signature;
         if (telemetryValuesPinsEnabled) return;
@@ -232,6 +250,11 @@ module.exports = function (RED) {
             return;
           }
           const telemetry = await readTelemetry(node.device, { wordOrder: node.device.wordOrder });
+          try {
+            if (cerebrum) cerebrum.update(simplifyTelemetry(telemetry));
+          } catch (_) {
+            // Cerebrum non deve mai interrompere la telemetria.
+          }
 
           if (node.compatibility === COMPATIBILITY_KNX_LOAD_CONTROL_PIN) {
             const hasWarning = normalizeWarningFlag(telemetry?.cutoff?.hasWarning);
@@ -408,6 +431,12 @@ module.exports = function (RED) {
       resolveDevice();
 
       node.on("close", (removed, done) => {
+        try {
+          if (cerebrum) cerebrum.dispose();
+        } catch (_) {
+          // ignore
+        }
+        cerebrum = null;
         try {
           if (resolveTimer) clearTimeout(resolveTimer);
           resolveTimer = null;
