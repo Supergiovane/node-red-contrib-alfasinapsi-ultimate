@@ -3,8 +3,9 @@
 <br/>
 
 <p>
-<b>Unreleased</b><br/>
+<b>Version 1.1.12</b> - November 2026<br/>
 - NEW: integrazione con Cerebrum Ultimate. Il nodo telemetria pubblica potenze, energie, fascia oraria e preavviso di distacco a Cerebrum Ultimate, in sola lettura, quando Cerebrum è installato nello stesso Node-RED. I client MCP li possono leggere tramite il server MCP di Cerebrum. Vedi la <a href="https://www.maxsupervibe.com/docs/cerebrum-ultimate/">documentazione di Cerebrum Ultimate</a>.<br/>
+- DOCS: README and documentation links now point to www.maxsupervibe.com.<br/>
 </p>
 
 <p>
